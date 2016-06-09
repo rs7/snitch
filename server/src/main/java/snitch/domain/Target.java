@@ -5,12 +5,17 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.ManyToMany;
+import javax.persistence.OneToMany;
+import java.util.List;
 import java.util.Set;
 
 @Entity
 public class Target {
     @ManyToMany(mappedBy = "targets")
     private Set<Customer> customers;
+
+    @OneToMany(mappedBy = "target")
+    private List<Event> events;
 
     @GeneratedValue
     @Id
@@ -24,6 +29,10 @@ public class Target {
 
     public Set<Customer> getCustomers() {
         return customers;
+    }
+
+    public List<Event> getEvents() {
+        return events;
     }
 
     public Integer getId() {
