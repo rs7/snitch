@@ -4,6 +4,8 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import java.util.Set;
 
 @Entity
 public class Event {
@@ -12,6 +14,9 @@ public class Event {
     @GeneratedValue
     @Id
     private Long id;
+
+    @OneToMany(mappedBy = "event")
+    private Set<Message> messages;
 
     @ManyToOne
     private Target target;
@@ -25,6 +30,10 @@ public class Event {
 
     public Long getId() {
         return id;
+    }
+
+    public Set<Message> getMessages() {
+        return messages;
     }
 
     public Target getTarget() {
