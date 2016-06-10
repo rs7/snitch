@@ -14,6 +14,13 @@ app.use(function (req, res, next) {
     res.fail = function (error) {
         res.json({error: error})
     };
+    res.callback = function (error, result) {
+        if (error) {
+            this.fail(error);
+            return;
+        }
+        this.success(result);
+    }.bind(res);
     next();
 });
 
