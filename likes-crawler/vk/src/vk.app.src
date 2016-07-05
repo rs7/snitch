@@ -1,0 +1,14 @@
+{
+  application, vk,
+  [
+    {description, "Snitch VK library"},
+    {vsn, "0.1"},
+    {registered, []},
+    {applications, [kernel,stdlib, inets]},
+    {env, []},
+    {modules, []},
+    {maintainers, []},
+    {licenses, []},
+    {links, []}
+  ]
+}.
