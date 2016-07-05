@@ -1,13 +1,14 @@
 -module(test).
 
 %% API exports
--export([photoLikes/0]).
+-export([photoLikes/0, photoLikesCount/0]).
 
 %%====================================================================
 %% API functions
 %%====================================================================
 
-photoLikes() -> vk_api:getPhotosLikes({38940203, 397559749}, 11000).
+photoLikes() -> vk_api:getPhotosLikes({38940203, 397559749}).
+photoLikesCount() -> vk_api:getPhotosLikes({38940203, 397559749}, 11000).
 
 %%====================================================================
 %% Internal functions

@@ -2,15 +2,20 @@
 
 -include("vk_request.hrl").
 
+-define(COUNT_KEY, <<"count">>).
 -define(ITEMS_KEY, <<"items">>).
 -define(LIMIT, 1000).
 
 %% API exports
--export([getAll/2]).
+-export([getAll/1, getAll/2]).
 
 %%====================================================================
 %% API functions
 %%====================================================================
+
+getAll(Request) ->
+  #{?COUNT_KEY := Count, ?ITEMS_KEY := Items} = vk_call:call(putCount(Request, ?LIMIT)),
+  lists:concat([Items, getAll(Request, Count)]).
 
 getAll(Request, Count) ->
   Results = callAll(Request, Count),
