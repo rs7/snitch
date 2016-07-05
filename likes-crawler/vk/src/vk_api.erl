@@ -3,37 +3,26 @@
 -include("vk_request.hrl").
 
 %% API exports
--export([getPhotosLikes/1, getPhotosLikes/2]).
+-export([getLikes/1, getLikes/2]).
 
 %%====================================================================
 %% API functions
 %%====================================================================
 
-getPhotosLikes({Owner, Photo}) -> vk_list:getAll(
-  #request{
-    method = 'likes.getList',
-    params = #{
-      owner_id => Owner,
-      item_id => Photo,
-      type => photo,
-      v => '5.52'
-    }
-  }
-).
+getLikes(LikeItem) -> vk_list:getAll(likesRequest(LikeItem)).
 
-getPhotosLikes({Owner, Photo}, Count) -> vk_list:getAll(
-  #request{
-    method = 'likes.getList',
-    params = #{
-      owner_id => Owner,
-      item_id => Photo,
-      type => photo,
-      v => '5.52'
-    }
-  },
-  Count
-).
+getLikes(LikeItem, Count) -> vk_list:getAll(likesRequest(LikeItem), Count).
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
+
+likesRequest({Type, Owner, Item}) -> #request{
+  method = 'likes.getList',
+  params = #{
+    type => Type,
+    owner_id => Owner,
+    item_id => Item,
+    v => '5.52'
+  }
+}.
