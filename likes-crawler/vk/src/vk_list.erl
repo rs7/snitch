@@ -15,12 +15,12 @@
 
 getPages(Request, PageFrom, PageTo) ->
   Requests = [requestWithPageParams(Request, offset(Page)) || Page <- lists:seq(PageFrom, PageTo)],
-  Responses = rpc:pmap({vk_call, call}, [], Requests),
+  Responses = rpc:pmap({vk_call, call}, [get], Requests),
   mergeResponses(Responses).
 
 getPageCount(ItemsCount) -> util:ceil(ItemsCount / ?LIMIT).
 
-getItemCount(Request) -> getCount(vk_call:call(requestWithCountParams(Request))).
+getItemCount(Request) -> getCount(vk_call:call(requestWithCountParams(Request), get)).
 
 %%====================================================================
 %% Internal functions

@@ -5,30 +5,43 @@
 -define(RESPONSE_KEY, <<"response">>).
 
 %% API exports
--export([call/1, callAll/1]).
+-export([call/2]).
 
 %%====================================================================
 %% API functions
 %%====================================================================
 
-call(Request) -> response(decode(body(request(url(Request))))).
+call(Request, Method) -> result(request(Request, Method)).
 
-callAll(Requests) -> rpc:pmap({?MODULE, call}, [], Requests).
+%%callAll(Requests) -> rpc:pmap({?MODULE, call}, [], Requests).
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
 
-url(Request) -> "http://api.vk.com/method/" ++ atom_to_list(Request#request.method) ++ "?" ++ query(Request#request.params).
+url(Method) -> "http://api.vk.com/method/" ++ atom_to_list(Method).
 
 query(Params) -> string:join(
   [lists:concat([Key, "=", Value]) || {Key, Value} <- maps:to_list(Params)],
   "&"
 ).
 
-request(URL) ->
-  io:format("--> ~s~n", [URL]), %%debug
-  httpc:request(URL).
+request(#request{method = Method, params = Params}, HTTPMethod) -> request(
+  url(Method),
+  query(Params),
+  HTTPMethod
+).
+
+request(URL, Query, get) -> httpc:request(URL ++ "?" ++ Query);
+request(URL, Query, post) -> httpc:request(
+  post,
+  {
+    URL, [], "application/x-www-form-urlencoded", Query
+  },
+  [], []
+).
+
+result(Result) -> response(decode(body(Result))).
 
 body({ok, {{_Version, 200, _ReasonPhrase}, _Headers, Body}}) -> Body.
 
