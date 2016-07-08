@@ -1,26 +1,27 @@
--module(vk_api).
+-module(vk_like).
 
 -include("vk_request.hrl").
 
 %% API exports
--export([getLikes/1, getLikes/2]).
+-export([get/2]).
 
 %%====================================================================
 %% API functions
 %%====================================================================
 
-getLikes(LikeItem) -> vk_list:getAll(likesRequest(LikeItem)).
-
-getLikes(LikeItem, Count) -> vk_list:getAll(likesRequest(LikeItem), Count).
+get(_, 0) -> [];
+get(PhotoObject, Count) ->
+  PagesCount = vk_list:getPageCount(Count),
+  vk_list:getPages(likesRequest(PhotoObject), 1, PagesCount).
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
 
-likesRequest({Type, Owner, Item}) -> #request{
+likesRequest({Owner, Item}) -> #request{
   method = 'likes.getList',
   params = #{
-    type => Type,
+    type => photo,
     owner_id => Owner,
     item_id => Item,
     v => '5.52'

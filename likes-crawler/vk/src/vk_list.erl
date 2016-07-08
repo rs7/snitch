@@ -7,32 +7,42 @@
 -define(LIMIT, 1000).
 
 %% API exports
--export([getAll/1, getAll/2]).
+-export([getPages/3, getPageCount/1, getItemCount/1, mergeResponses/1]).
 
 %%====================================================================
 %% API functions
 %%====================================================================
 
-getAll(Request) ->
-  #{?COUNT_KEY := Count, ?ITEMS_KEY := Items} = vk_call:call(putCount(Request, ?LIMIT)),
-  lists:concat([Items, getAll(Request, Count)]).
+getPages(Request, PageFrom, PageTo) ->
+  Requests = [requestWithPageParams(Request, offset(Page)) || Page <- lists:seq(PageFrom, PageTo)],
+  Responses = rpc:pmap({vk_call, call}, [], Requests),
+  mergeResponses(Responses).
 
-getAll(Request, Count) ->
-  Results = callAll(Request, Count),
-  Items = [maps:get(?ITEMS_KEY, Result) || Result <- Results],
-  lists:concat(Items).
+getPageCount(ItemsCount) -> util:ceil(ItemsCount / ?LIMIT).
+
+getItemCount(Request) -> getCount(vk_call:call(requestWithCountParams(Request))).
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
 
-callAll(Request, Count) -> vk_call:callAll(requestList(putCount(Request, ?LIMIT), offsetList(Count))).
+getItems(Response) -> maps:get(?ITEMS_KEY, Response).
 
-requestList(Request, OffsetList) -> [putOffset(Request, Offset) || Offset <- OffsetList].
+getCount(Response) -> maps:get(?COUNT_KEY, Response).
 
-offsetList(Count) -> [PageNumber * ?LIMIT || PageNumber <- lists:seq(0, util:ceil(Count / ?LIMIT) - 1)].
+mergeResponses(Responses) -> lists:concat([getItems(Response) || Response <- Responses]).
 
-putCount(Request, Count) -> putParamToRequest(Request, count, Count).
-putOffset(Request, Offset) -> putParamToRequest(Request, offset, Offset).
+offset(Page) -> (Page - 1) * ?LIMIT.
 
-putParamToRequest(Request, Key, Value) -> Request#request{params = (Request#request.params)#{Key => Value}}.
+requestWithPageParams(Request, Offset) -> Request#request{
+  params = (Request#request.params)#{
+    count => ?LIMIT,
+    offset => Offset
+  }
+}.
+
+requestWithCountParams(Request) -> Request#request{
+  params = (Request#request.params)#{
+    count => 0
+  }
+}.
