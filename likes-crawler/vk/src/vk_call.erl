@@ -13,18 +13,18 @@
 
 call(Request, Method) -> result(request(Request, Method)).
 
-%%callAll(Requests) -> rpc:pmap({?MODULE, call}, [], Requests).
-
 %%====================================================================
 %% Internal functions
 %%====================================================================
 
 url(Method) -> "http://api.vk.com/method/" ++ atom_to_list(Method).
 
-query(Params) -> string:join(
-  [lists:concat([Key, "=", Value]) || {Key, Value} <- maps:to_list(Params)],
+query(Params) -> P = string:join(
+  [pair(Key, Value) || {Key, Value} <- maps:to_list(Params)],
   "&"
-).
+), io:format("~s~n", [P]), P.
+
+pair(Key, Value) -> lists:concat([Key, "=", Value]).
 
 request(#request{method = Method, params = Params}, HTTPMethod) -> request(
   url(Method),

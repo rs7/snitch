@@ -23,7 +23,7 @@ getActive(Users) ->
 usersRequest(Users) -> #request{
   method = 'users.get',
   params = #{
-    user_ids => lists:join(",", [integer_to_list(User) || User <- Users]),
+    user_ids => string:join([integer_to_list(User) || User <- Users], ","),
     v => '5.52'
   }
 }.
