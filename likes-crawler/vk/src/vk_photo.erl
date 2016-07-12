@@ -5,7 +5,7 @@
 -define(ALBUMS, [profile, wall]).
 
 %% API exports
--export([get/1, getAlbum/1]).
+-export([get/1, getAlbum/1, getCount/1]).
 
 %%====================================================================
 %% API functions
@@ -24,6 +24,12 @@ getAlbum(AlbumObject) ->
   Count = vk_list:getItemCount(Request),
   PagesCount = vk_list:getPageCount(Count),
   vk_list:getPages(Request, 1, PagesCount).
+
+getCount(Owner) ->
+  Counts = rpc:parallel_eval([
+    {vk_list, getItemCount, [photosRequest({Owner, Album})]} || Album <- ?ALBUMS
+  ]),
+  util:sum(Counts).
 
 %%====================================================================
 %% Internal functions
