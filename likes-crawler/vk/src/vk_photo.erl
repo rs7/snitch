@@ -2,6 +2,8 @@
 
 -include("vk_request.hrl").
 
+-define(ALBUMS, [profile, wall]).
+
 %% API exports
 -export([get/1, getAlbum/1]).
 
@@ -12,8 +14,7 @@
 get(Owner) ->
   Items = lists:concat(
     rpc:parallel_eval([
-      {?MODULE, getAlbum, [{Owner, profile}]},
-      {?MODULE, getAlbum, [{Owner, wall}]}
+      {?MODULE, getAlbum, [{Owner, Album}]} || Album <- ?ALBUMS
     ])
   ),
   [photoObject(Item) || Item <- Items].
