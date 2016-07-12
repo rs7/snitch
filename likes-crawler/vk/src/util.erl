@@ -1,7 +1,7 @@
 -module(util).
 
 %% API exports
--export([ceil/1]).
+-export([ceil/1, sum/1, avg/1]).
 
 %%====================================================================
 %% API functions
@@ -13,6 +13,10 @@ ceil(Number) ->
     true -> TruncateNumber;
     false -> TruncateNumber + 1
   end.
+
+sum(List) -> lists:foldl(fun(Item, Sum) -> Sum + Item end, 0, List).
+
+avg(List) -> sum(List) / length(List).
 
 %%====================================================================
 %% Internal functions
