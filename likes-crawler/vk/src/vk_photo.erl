@@ -1,39 +1,29 @@
 -module(vk_photo).
 
--include("vk_request.hrl").
-
 -define(ALBUMS, [profile, wall]).
 
 %% API exports
--export([get/1, getAlbum/1, getCount/1]).
+-export([getPhotosWithLikesCounts/1, getAlbum/1, getCount/1]).
 
 %%====================================================================
 %% API functions
 %%====================================================================
 
-get(Owner) ->
-  Items = lists:concat(
-    rpc:parallel_eval([
-      {?MODULE, getAlbum, [{Owner, Album}]} || Album <- ?ALBUMS
-    ])
-  ),
-  [photoObject(Item) || Item <- Items].
+getPhotosWithLikesCounts(Owner) ->
+  Items = lists:concat(rpc:pmap({?MODULE, getAlbum}, [], albums(Owner))),
+  lists:unzip(lists:map(fun photoObject/1, Items)).
 
-getAlbum(AlbumObject) ->
-  Request = photosRequest(AlbumObject),
-  Count = vk_list:getItemCount(Request),
-  PagesCount = vk_list:getPageCount(Count),
-  vk_list:getPages(Request, 1, PagesCount).
+getAlbum(AlbumObject) -> vk_list:getAll(photosRequest(AlbumObject)).
 
 getCount(Owner) ->
-  Counts = rpc:parallel_eval([
-    {vk_list, getItemCount, [photosRequest({Owner, Album})]} || Album <- ?ALBUMS
-  ]),
-  util:sum(Counts).
+  Requests = lists:map(fun photosRequest/1, albums(Owner)),
+  lists:sum(rpc:pmap({vk_list, getItemCount}, [], Requests)).
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
+
+albums(Owner) -> [{Owner, Album} || Album <- ?ALBUMS].
 
 photoObject(
   #{
@@ -43,13 +33,13 @@ photoObject(
       <<"count">> := Count
     }
   }
-) -> [
+) -> {
   {Owner, Item}, Count
-].
+}.
 
-photosRequest({Owner, Album}) -> #request{
-  method = 'photos.get',
-  params = #{
+photosRequest({Owner, Album}) -> {
+  'photos.get',
+  #{
     owner_id => Owner,
     album_id => Album,
     extended => 1,
