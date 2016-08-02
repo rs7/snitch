@@ -1,5 +1,0 @@
--ifdef(debug).
-  -define(DBG(Pattern, Values), io:format(Pattern, Values)).
--else.
-  -define(DBG(Pattern, Values), ok).
--endif.

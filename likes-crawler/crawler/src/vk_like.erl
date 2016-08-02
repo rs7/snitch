@@ -8,7 +8,7 @@
 %%====================================================================
 
 get(_PhotoObject, 0) -> [];
-get(PhotoObject, Count) -> vk_list:getAll(likesRequest(PhotoObject), Count).
+get(PhotoObject, Count) -> vk_list:get(likesRequest(PhotoObject), Count).
 
 %%====================================================================
 %% Internal functions

@@ -1,15 +1,20 @@
--module(vk_api).
+-module(vk).
 
 %% API exports
--export([domain/0, method/1]).
+-export([getLikes/1, filterActive/1]).
 
 %%====================================================================
 %% API functions
 %%====================================================================
 
-domain() -> "api.vk.com".
+filterActive(Users) -> vk_user:filterActive(Users).
 
-method(Method) -> "method/" ++ atom_to_list(Method).
+getLikes(Owner) ->
+  {Photos, Counts} = vk_photo:getPhotosWithLikesCounts(Owner),
+  Likes = rpc:parallel_eval([
+    {vk_like, get, [Photo, Count]} || {Photo, Count} <- lists:zip(Photos, Counts)
+  ]),
+  lists:zip(Photos, Likes).
 
 %%====================================================================
 %% Internal functions

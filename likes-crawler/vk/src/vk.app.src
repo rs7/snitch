@@ -1,10 +1,11 @@
 {
   application, vk,
   [
-    {description, "Snitch VK library"},
-    {vsn, "0.0.1"},
+    {description, "Snitch VK application"},
+    {vsn, "0.1.0"},
     {registered, []},
-    {applications, [kernel, stdlib, inets]},
+    {mod, {vk, []}},
+    {applications, [kernel, stdlib, shotgun]},
     {env, []},
     {modules, []},
     {maintainers, []},

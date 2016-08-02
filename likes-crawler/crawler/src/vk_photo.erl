@@ -13,7 +13,7 @@ getPhotosWithLikesCounts(Owner) ->
   Items = lists:concat(rpc:pmap({?MODULE, getAlbum}, [], albums(Owner))),
   lists:unzip(lists:map(fun photoObject/1, Items)).
 
-getAlbum(AlbumObject) -> vk_list:getAll(photosRequest(AlbumObject)).
+getAlbum(AlbumObject) -> vk_list:get(photosRequest(AlbumObject)).
 
 getCount(Owner) ->
   Requests = lists:map(fun photosRequest/1, albums(Owner)),

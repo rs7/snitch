@@ -1,38 +1,36 @@
 -module(vk_list).
 
--define(COUNT_KEY, <<"count">>).
--define(ITEMS_KEY, <<"items">>).
 -define(LIMIT, 1000).
 
-%% API exports
--export([getAll/1, getAll/2, getItemCount/1]).
+%% API
+-export([get/1, get/2, getCount/1]).
 
 %%====================================================================
-%% API functions
+%% API
 %%====================================================================
 
-getAll(Request) -> getAll(Request, getItemCount(Request)).
+get(Request) -> get(Request, getCount(Request)).
 
-getAll(Request, Count) -> getPages(Request, lists:seq(1, getPageCount(Count))).
+get(Request, Count) -> getPages(Request, lists:seq(1, getPageCount(Count))).
 
-getItemCount(Request) -> getCount(vk_call:call(countRequest(Request))).
+getCount(Request) -> extractCount(vk:single(countRequest(Request))).
 
 %%====================================================================
-%% Internal functions
+%% internal
 %%====================================================================
 
 getPages(Request, Pages) ->
   Requests = [pageRequest(Request, Page) || Page <- Pages],
-  Responses = vk_call:callAll(Requests),
+  Responses = vk:multi(Requests),
   mergeResponses(Responses).
 
-getPageCount(ItemsCount) -> util:ceil(ItemsCount / ?LIMIT).
+getPageCount(ItemsCount) -> ceil(ItemsCount / ?LIMIT).
 
-getItems(Response) -> maps:get(?ITEMS_KEY, Response).
+extractItems(Response) -> maps:get(<<"items">>, Response).
 
-getCount(Response) -> maps:get(?COUNT_KEY, Response).
+extractCount(Response) -> maps:get(<<"count">>, Response).
 
-mergeResponses(Responses) -> lists:concat(lists:map(fun getItems/1, Responses)).
+mergeResponses(Responses) -> lists:concat(lists:map(fun extractItems/1, Responses)).
 
 offset(Page) -> (Page - 1) * ?LIMIT.
 
@@ -50,3 +48,14 @@ countRequest({Method, Params}) -> {
     count => 0
   }
 }.
+
+%%====================================================================
+%% util
+%%====================================================================
+
+ceil(Number) ->
+  TruncateNumber = trunc(Number),
+  case TruncateNumber == Number of
+    true -> TruncateNumber;
+    false -> TruncateNumber + 1
+  end.
