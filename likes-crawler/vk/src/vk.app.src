@@ -2,7 +2,7 @@
   application, vk,
   [
     {description, "Snitch VK application"},
-    {vsn, "0.1.0"},
+    {vsn, "0.2.0"},
     {registered, []},
     {mod, {vk, []}},
     {applications, [kernel, stdlib, shotgun]},

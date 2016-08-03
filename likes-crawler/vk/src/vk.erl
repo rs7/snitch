@@ -3,7 +3,7 @@
 -behaviour(application).
 
 %% API
--export([start/0, start_all/0, stop/0, single/1, multi/1, list/1, list/2, listCount/1]).
+-export([start/0, start_all/0, stop/0, single/1, multi/1, list/1, list/2, listCount/1, users/2]).
 
 %% application
 -export([start/2, stop/1]).
@@ -29,6 +29,8 @@ list(Request) -> vk_list:get(Request).
 list(Request, Count) -> vk_list:get(Request, Count).
 
 listCount(Request) -> vk_list:getCount(Request).
+
+users(Users, Params) -> vk_user:get(Users, Params).
 
 %%====================================================================
 %% application

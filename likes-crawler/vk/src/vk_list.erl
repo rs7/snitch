@@ -24,7 +24,7 @@ getPages(Request, Pages) ->
   Responses = vk:multi(Requests),
   mergeResponses(Responses).
 
-getPageCount(ItemsCount) -> ceil(ItemsCount / ?LIMIT).
+getPageCount(ItemsCount) -> vk_util:ceil(ItemsCount / ?LIMIT).
 
 extractItems(Response) -> maps:get(<<"items">>, Response).
 
@@ -48,14 +48,3 @@ countRequest({Method, Params}) -> {
     count => 0
   }
 }.
-
-%%====================================================================
-%% util
-%%====================================================================
-
-ceil(Number) ->
-  TruncateNumber = trunc(Number),
-  case TruncateNumber == Number of
-    true -> TruncateNumber;
-    false -> TruncateNumber + 1
-  end.

@@ -1,17 +1,18 @@
--module(crawler_user).
-
--define(LIMIT, 1000).
+-module(vk_util).
 
 %% API
--export([filterActive/1]).
+-export([ceil/1]).
 
 %%====================================================================
 %% API
 %%====================================================================
 
-filterActive(Users) ->
-  Response = vk:users(Users, #{v => '5.52'}),
-  [maps:get(<<"id">>, User) || User <- Response, not maps:is_key(<<"deactivated">>, User)].
+ceil(Number) ->
+  TruncateNumber = trunc(Number),
+  case TruncateNumber == Number of
+    true -> TruncateNumber;
+    false -> TruncateNumber + 1
+  end.
 
 %%====================================================================
 %% internal
