@@ -1,17 +1,17 @@
--module(vk_like).
+-module(crawler_like).
 
-%% API exports
+%% API
 -export([get/2]).
 
 %%====================================================================
-%% API functions
+%% API
 %%====================================================================
 
 get(_PhotoObject, 0) -> [];
-get(PhotoObject, Count) -> vk_list:get(likesRequest(PhotoObject), Count).
+get(PhotoObject, Count) -> vk:list(likesRequest(PhotoObject), Count).
 
 %%====================================================================
-%% Internal functions
+%% internal
 %%====================================================================
 
 likesRequest({Owner, Item}) -> {

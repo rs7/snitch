@@ -1,21 +1,21 @@
--module(vk).
+-module(crawler).
 
-%% API exports
+%% API
 -export([getLikes/1, filterActive/1]).
 
 %%====================================================================
-%% API functions
+%% API
 %%====================================================================
 
-filterActive(Users) -> vk_user:filterActive(Users).
+filterActive(Users) -> crawler_user:filterActive(Users).
 
 getLikes(Owner) ->
-  {Photos, Counts} = vk_photo:getPhotosWithLikesCounts(Owner),
+  {Photos, Counts} = crawler_photo:getPhotosWithLikesCounts(Owner),
   Likes = rpc:parallel_eval([
-    {vk_like, get, [Photo, Count]} || {Photo, Count} <- lists:zip(Photos, Counts)
+    {crawler_like, get, [Photo, Count]} || {Photo, Count} <- lists:zip(Photos, Counts)
   ]),
   lists:zip(Photos, Likes).
 
 %%====================================================================
-%% Internal functions
+%% internal
 %%====================================================================

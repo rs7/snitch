@@ -1,23 +1,21 @@
--module(vk_user).
+-module(crawler_user).
 
--define(DEACTIVATED_KEY, <<"deactivated">>).
--define(ID_KEY, <<"id">>).
 -define(LIMIT, 1000).
 
-%% API exports
+%% API
 -export([filterActive/1]).
 
 %%====================================================================
-%% API functions
+%% API
 %%====================================================================
 
 filterActive(Users) ->
   Requests = lists:map(fun getUsersRequest/1, partition(Users)),
-  Response = lists:concat(vk_call:callAll(Requests)),
-  [maps:get(?ID_KEY, User) || User <- Response, not maps:is_key(?DEACTIVATED_KEY, User)].
+  Response = lists:concat(vk:multi(Requests)),
+  [maps:get(<<"id">>, User) || User <- Response, not maps:is_key(<<"deactivated">>, User)].
 
 %%====================================================================
-%% Internal functions
+%% internal
 %%====================================================================
 
 partition([]) -> [];

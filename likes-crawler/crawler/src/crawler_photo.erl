@@ -1,12 +1,12 @@
--module(vk_photo).
+-module(crawler_photo).
 
 -define(ALBUMS, [profile, wall]).
 
-%% API exports
+%% API
 -export([getPhotosWithLikesCounts/1, getAlbum/1, getCount/1]).
 
 %%====================================================================
-%% API functions
+%% API
 %%====================================================================
 
 getPhotosWithLikesCounts(Owner) ->
@@ -20,7 +20,7 @@ getCount(Owner) ->
   lists:sum(rpc:pmap({vk_list, getItemCount}, [], Requests)).
 
 %%====================================================================
-%% Internal functions
+%% internal
 %%====================================================================
 
 albums(Owner) -> [{Owner, Album} || Album <- ?ALBUMS].
