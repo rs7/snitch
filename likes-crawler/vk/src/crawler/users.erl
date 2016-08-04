@@ -1,6 +1,4 @@
--module(crawler_user).
-
--define(LIMIT, 1000).
+-module(users).
 
 %% API
 -export([filterActive/1]).

@@ -7,14 +7,9 @@
 %% API
 %%====================================================================
 
-filterActive(Users) -> crawler_user:filterActive(Users).
+filterActive(Users) -> users:filterActive(Users).
 
-getLikes(Owner) ->
-  {Photos, Counts} = crawler_photo:getPhotosWithLikesCounts(Owner),
-  Likes = rpc:parallel_eval([
-    {crawler_like, get, [Photo, Count]} || {Photo, Count} <- lists:zip(Photos, Counts)
-  ]),
-  lists:zip(Photos, Likes).
+getLikes(Owner) -> likes:get(Owner).
 
 %%====================================================================
 %% internal
