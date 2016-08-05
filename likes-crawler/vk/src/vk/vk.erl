@@ -3,7 +3,7 @@
 -behaviour(application).
 
 %% API
--export([start/0, start_all/0, stop/0, single/1, multi/1, list/1, list/2, listCount/1, users/2]).
+-export([single/1, multi/1, list/1, list/2, listCount/1, users/2, start/0, stop/0]).
 
 %% application
 -export([start/2, stop/1]).
@@ -12,9 +12,7 @@
 %% API
 %%====================================================================
 
-start() -> application:start(?MODULE).
-
-start_all() -> application:ensure_all_started(?MODULE).
+start() -> application:ensure_all_started(?MODULE).
 
 stop() -> application:stop(?MODULE).
 
@@ -36,7 +34,7 @@ users(Users, Params) -> vk_user:get(Users, Params).
 %% application
 %%====================================================================
 
-start(_StartType, _StartArguments) -> vk_supervisor:start_link().
+start(_StartType, [ConnectionCount]) -> vk_supervisor:start_link(ConnectionCount).
 
 stop(_State) -> ok.
 

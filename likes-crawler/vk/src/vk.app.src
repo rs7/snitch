@@ -4,7 +4,7 @@
     {description, "Snitch VK application"},
     {vsn, "0.2.0"},
     {registered, []},
-    {mod, {vk, []}},
+    {mod, {vk, [5]}},
     {applications, [kernel, stdlib, shotgun]},
     {env, []},
     {modules, []},
