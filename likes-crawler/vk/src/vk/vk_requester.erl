@@ -2,17 +2,17 @@
 
 -behaviour(gen_server).
 
-%% api
+%%% api
 -export([start_link/0]).
 
-%% gen_server
+%%% gen_server
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 -record(state, {connection}).
 
-%%====================================================================
-%% api
-%%====================================================================
+%%%====================================================================
+%%% api
+%%%====================================================================
 
 start_link() -> gen_server:start_link(?MODULE, [], []).
 
@@ -21,19 +21,19 @@ start_link() -> gen_server:start_link(?MODULE, [], []).
 %%%===================================================================
 
 init([]) ->
-  case shotgun:open("api.vk.com", 443, https) of
+  case connect() of
     {ok, Pid} ->
       erlang:monitor(process, Pid),
-      erlang:send_after(1000, self(), free),
-      {ok, #state{connection = Pid}};
+      {ok, #state{connection = Pid}, 2000};
     {error, Reason} ->
       {stop, Reason}
   end.
 
-handle_call({request, Request}, _From, State = #state{connection = Connection}) ->
-  Reply = case do_request(Connection, Request) of
-    {ok, Result} -> {result, Result};
-    {error, Reason} -> {retry, Reason}
+handle_call(do_request, _From, State = #state{connection = Connection}) ->
+  Request = vk_request_generator:get_request(),
+  Reply = case request(Connection, Request) of
+    {ok, Result} -> {ok, Result};
+    {error, Reason} -> {error, Reason}
   end,
   {reply, Reply, State};
 
@@ -41,22 +41,22 @@ handle_call(_Request, _From, State) -> {noreply, State}.
 
 handle_cast(_Request, State) -> {noreply, State}.
 
+handle_info(timeout, State) ->
+  self() ! i_am_free,
+  {noreply, State};
+
+handle_info(i_am_free, State = #state{connection = Connection}) ->
+  Request = vk_request_generator:get_request(),
+  case request(Connection, Request) of
+    {ok, Result} -> vk_request_generator:commit_result(Result);
+    {error, Reason} -> io:format("Error: ~n~p~n~p~n", [Request, Reason])
+  end,
+  %%self() ! i_am_free,
+  {noreply, State};
+
 handle_info({'DOWN', _Reference, process, Pid, Reason}, State = #state{connection = Connection})
   when Pid == Connection ->
   {stop, Reason, State#state{connection = undefined}};
-
-handle_info(free, State = #state{connection = Connection}) ->
-  Request = vk_request_generator:get_request(),
-  case do_request(Connection, Request) of
-    {ok, Result} ->
-      vk_request_generator:commit_result(Result),
-      erlang:send_after(0, self(), free);
-    {error, Reason} ->
-      io:format("Error: ~n~p~n~p~n", [Request, Reason]),
-      erlang:send_after(1000, self(), free)
-  end,
-
-  {noreply, State};
 
 handle_info(_Info, State) -> {noreply, State}.
 
@@ -72,25 +72,28 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%% internal
 %%%===================================================================
 
-do_request(Connection, Request) ->
+connect() -> shotgun:open("api.vk.com", 443, https).
+
+request(Connection, Request) ->
   case shotgun_request(Connection, Request) of
-    {ok, #{body := Body, status_code := 200}} -> {ok, parse_body(Body)};
+    {ok, #{status_code := 200, body := Body}} -> parse_body(Body);
     {ok, #{status_code := StatusCode}} -> {error, {status_code, StatusCode}};
-    {error, Reason} -> {error, Reason}
+    {error, Reason} -> {error, {shotgun, Reason}}
   end.
 
 shotgun_request(Connection, {Method, Params}) -> shotgun:post(
   Connection,
-  "/method/" ++ atom_to_list(Method),
+  ["/method/", Method],
   #{<<"Content-Type">> => <<"application/x-www-form-urlencoded">>},
   to_urlencoded(Params),
   #{timeout => 10000}
 ).
 
 parse_body(Body) ->
-  case jsone:decode(Body) of
-    #{<<"response">> := Response} -> {response, Response};
-    #{<<"error">> := #{<<"error_code">> := Code}} -> {error, Code}
+  case jsone:try_decode(Body) of
+    {ok, #{<<"response">> := Response}, _Remainings} -> {ok, {response, Response}};
+    {ok, #{<<"error">> := #{<<"error_code">> := Code}}, _Remainings} -> {ok, {error, Code}};
+    {error, Reason} -> {error, {json, Reason}}
   end.
 
 %%%===================================================================
