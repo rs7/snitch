@@ -2,37 +2,44 @@
 
 -behaviour(supervisor).
 
-%% API
+%% api
 -export([start_link/1]).
 
 %% supervisor
 -export([init/1]).
 
 %%====================================================================
-%% API
+%% api
 %%====================================================================
 
-start_link(ConnectionCount) -> supervisor:start_link({local, ?MODULE}, ?MODULE, ConnectionCount).
+start_link(RequestersCount) -> supervisor:start_link({local, ?MODULE}, ?MODULE, RequestersCount).
 
 %%====================================================================
 %% supervisor
 %%====================================================================
 
-init(ConnectionCount) ->
+init(RequestersCount) ->
   Strategy = #{strategy => one_for_all, intensity => 0, period => 1},
 
-  PoolSupervisorSpecification = #{
-    id => vk_connection_pool_supervisor,
-    start => {vk_connection_pool_supervisor, start_link, []},
+  RequestPoolSpecification = #{
+    id => vk_request_generator,
+    start => {vk_request_generator, start_link, []},
     type => supervisor
   },
 
-  PoolControllerSpecification = #{
-    id => vk_connection_pool_controller,
-    start => {vk_connection_pool_controller, start_link, [ConnectionCount]}
+  RequesterPoolSupervisorSpecification = #{
+    id => vk_requester_pool_supervisor,
+    start => {vk_requester_pool_supervisor, start_link, []},
+    type => supervisor
+  },
+
+  RequesterPoolControllerSpecification = #{
+    id => vk_requester_pool_controller,
+    start => {vk_requester_pool_controller, start_link, [RequestersCount]}
   },
 
   {ok, {Strategy, [
-    PoolSupervisorSpecification,
-    PoolControllerSpecification
+    RequestPoolSpecification,
+    RequesterPoolSupervisorSpecification,
+    RequesterPoolControllerSpecification
   ]}}.

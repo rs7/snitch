@@ -1,37 +1,37 @@
--module(vk_connection).
+-module(vk_requester).
 
 -behaviour(gen_server).
 
-%% API
--export([start_link/0, request/1, do_request/2]).
+%% api
+-export([start_link/0]).
 
 %% gen_server
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 -record(state, {connection}).
 
-%%%===================================================================
-%%% API
-%%%===================================================================
+%%====================================================================
+%% api
+%%====================================================================
 
 start_link() -> gen_server:start_link(?MODULE, [], []).
-
-request(Request) -> gen_server:call(?MODULE, {request, Request}, infinity).
 
 %%%===================================================================
 %%% gen_server
 %%%===================================================================
 
 init([]) ->
-  Result = case connect() of
-    {ok, Connection} -> {ok, #state{connection = Connection}};
-    {error, Reason} -> {stop, Reason}
-  end,
-  io:format("Connect ~p~n", [self()]),
-  Result.
+  case shotgun:open("api.vk.com", 443, https) of
+    {ok, Pid} ->
+      erlang:monitor(process, Pid),
+      erlang:send_after(1000, self(), free),
+      {ok, #state{connection = Pid}};
+    {error, Reason} ->
+      {stop, Reason}
+  end.
 
 handle_call({request, Request}, _From, State = #state{connection = Connection}) ->
-  Reply = case request(Connection, Request) of
+  Reply = case do_request(Connection, Request) of
     {ok, Result} -> {result, Result};
     {error, Reason} -> {retry, Reason}
   end,
@@ -41,9 +41,30 @@ handle_call(_Request, _From, State) -> {noreply, State}.
 
 handle_cast(_Request, State) -> {noreply, State}.
 
+handle_info({'DOWN', _Reference, process, Pid, Reason}, State = #state{connection = Connection})
+  when Pid == Connection ->
+  {stop, Reason, State#state{connection = undefined}};
+
+handle_info(free, State = #state{connection = Connection}) ->
+  Request = vk_request_generator:get_request(),
+  case do_request(Connection, Request) of
+    {ok, Result} ->
+      vk_request_generator:commit_result(Result),
+      erlang:send_after(0, self(), free);
+    {error, Reason} ->
+      io:format("Error: ~n~p~n~p~n", [Request, Reason]),
+      erlang:send_after(1000, self(), free)
+  end,
+
+  {noreply, State};
+
 handle_info(_Info, State) -> {noreply, State}.
 
-terminate(_Reason, _State) -> ok.
+terminate(_Reason, #state{connection = undefined}) -> ok;
+
+terminate(_Reason, #state{connection = Connection}) ->
+  shotgun:close(Connection),
+  ok.
 
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
@@ -51,24 +72,22 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%% internal
 %%%===================================================================
 
-connect() -> shotgun:open("api.vk.com", 443, https).
-
-request(Connection, Request) ->
-  case do_request(Connection, Request) of
-    {ok, #{body := Body, status_code := 200}} -> {ok, body_parse(Body)};
+do_request(Connection, Request) ->
+  case shotgun_request(Connection, Request) of
+    {ok, #{body := Body, status_code := 200}} -> {ok, parse_body(Body)};
     {ok, #{status_code := StatusCode}} -> {error, {status_code, StatusCode}};
     {error, Reason} -> {error, Reason}
   end.
 
-do_request(Connection, {Method, Params}) -> shotgun:post(
+shotgun_request(Connection, {Method, Params}) -> shotgun:post(
   Connection,
   "/method/" ++ atom_to_list(Method),
   #{<<"Content-Type">> => <<"application/x-www-form-urlencoded">>},
   to_urlencoded(Params),
-  #{timeout => 100}
+  #{timeout => 10000}
 ).
 
-body_parse(Body) ->
+parse_body(Body) ->
   case jsone:decode(Body) of
     #{<<"response">> := Response} -> {response, Response};
     #{<<"error">> := #{<<"error_code">> := Code}} -> {error, Code}

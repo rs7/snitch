@@ -1,10 +1,10 @@
 -module(crawler).
 
-%% API
+%% api
 -export([getLikes/1, filterUsers/1]).
 
 %%====================================================================
-%% API
+%% api
 %%====================================================================
 
 filterUsers(Users) -> users:filterActive(Users).

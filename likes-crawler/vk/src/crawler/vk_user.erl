@@ -2,11 +2,11 @@
 
 -define(LIMIT, 1000).
 
-%% API
+%% api
 -export([get/2]).
 
 %%====================================================================
-%% API
+%% api
 %%====================================================================
 
 get(Users, Params) -> mergeResponses(vk:multi(createRequests(Users, Params))).

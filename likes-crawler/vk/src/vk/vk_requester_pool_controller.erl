@@ -1,29 +1,29 @@
--module(vk_connection_pool_controller).
+-module(vk_requester_pool_controller).
 
 -behaviour(gen_server).
 
-%% API
--export([start_link/1, start_connection/0]).
+%% api
+-export([start_link/1, start_requester/0]).
 
 %% gen_server
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
--record(state, {connection_count}).
+-record(state, {}).
 
 %%====================================================================
-%% API
+%% api
 %%====================================================================
 
-start_link(ConnectionCount) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [ConnectionCount], []).
+start_link(RequestersCount) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [RequestersCount], []).
 
 %%====================================================================
 %% gen_server
 %%====================================================================
 
-init([ConnectionCount]) ->
-  io:format("ConnectionCount: ~B~n", [ConnectionCount]),
-  start_connections(ConnectionCount),
-  {ok, #state{connection_count = ConnectionCount}}.
+init([RequestersCount]) ->
+  io:format("Requester count: ~B~n", [RequestersCount]),
+  start_requesters(RequestersCount),
+  {ok, #state{}}.
 
 handle_call(_Request, _From, State) -> {noreply, State}.
 
@@ -43,12 +43,12 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %% internal
 %%====================================================================
 
-start_connections(ConnectionCount) -> [start_connection() || _ <- lists:seq(1, ConnectionCount)].
+start_requesters(Count) -> [start_requester() || _ <- lists:seq(1, Count)].
 
-start_connection() ->
-  {ok, PID} = vk_connection_pool_supervisor:start_child(),
+start_requester() ->
+  {ok, PID} = vk_requester_pool_supervisor:start_child(),
   erlang:monitor(process, PID),
   PID.
 
 handle_down_connection(Reason) ->
-  io:format("Connection DOWN: ~p~n", [Reason]).
+  io:format("Requester DOWN: ~p~n", [Reason]).

@@ -1,10 +1,10 @@
 -module(photos).
 
-%% API
+%% api
 -export([getWithLikeCount/1]).
 
 %%====================================================================
-%% API
+%% api
 %%====================================================================
 
 getWithLikeCount(Owner) -> lists:unzip(process(Owner)).
