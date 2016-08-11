@@ -29,14 +29,6 @@ init([]) ->
       {stop, Reason}
   end.
 
-handle_call(do_request, _From, State = #state{connection = Connection}) ->
-  Request = vk_request_generator:get_request(),
-  Reply = case request(Connection, Request) of
-    {ok, Result} -> {ok, Result};
-    {error, Reason} -> {error, Reason}
-  end,
-  {reply, Reply, State};
-
 handle_call(_Request, _From, State) -> {noreply, State}.
 
 handle_cast(_Request, State) -> {noreply, State}.
@@ -46,9 +38,9 @@ handle_info(timeout, State) ->
   {noreply, State};
 
 handle_info(i_am_free, State = #state{connection = Connection}) ->
-  Request = vk_request_generator:get_request(),
+  {Id, Request} = vk_request_pool:get_request(),
   case request(Connection, Request) of
-    {ok, Result} -> vk_request_generator:commit_result(Result);
+    {ok, Result} -> vk_request_pool:commit_result(Result);
     {error, Reason} -> io:format("Error: ~n~p~n~p~n", [Request, Reason])
   end,
   %%self() ! i_am_free,
@@ -83,7 +75,7 @@ request(Connection, Request) ->
 
 shotgun_request(Connection, {Method, Params}) -> shotgun:post(
   Connection,
-  ["/method/", Method],
+  ["/method/", atom_to_list(Method)],
   #{<<"Content-Type">> => <<"application/x-www-form-urlencoded">>},
   to_urlencoded(Params),
   #{timeout => 10000}
