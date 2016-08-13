@@ -22,8 +22,8 @@ init(RequestersCount) ->
   Strategy = #{strategy => one_for_all, intensity => 0, period => 1},
 
   RequestPoolSpecification = #{
-    id => vk_request_generator,
-    start => {vk_request_generator, start_link, []},
+    id => vk_request_pool,
+    start => {vk_request_pool, start_link, []},
     type => supervisor
   },
 

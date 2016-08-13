@@ -3,12 +3,12 @@
 -behaviour(gen_server).
 
 %%% api
--export([start_link/0, get_request/0, commit_result/1]).
+-export([start_link/0, get_request/0, result/3, error/3]).
 
 %%% gen_server
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
--record(state, {last_id, data, in_progress, repeat}).
+-record(state, {last_id, queue}).
 
 %%%===================================================================
 %%% api
@@ -18,7 +18,9 @@ start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 get_request() -> gen_server:call(?MODULE, get_request).
 
-commit_result(Result) -> gen_server:call(?MODULE, {result, Result}).
+result(Result, Id, Time) -> gen_server:cast(?MODULE, {result, Result, Id, Time}).
+
+error(Reason, Request, Id) -> gen_server:cast(?MODULE, {error, Reason, Request, Id}).
 
 %%%===================================================================
 %%% gen_server
@@ -26,57 +28,41 @@ commit_result(Result) -> gen_server:call(?MODULE, {result, Result}).
 
 init([]) -> {ok, #state{
   last_id = 0,
-  data = #{},
-  in_progress = [],
-  repeat = []
+  queue = []
 }}.
 
 handle_call(get_request, _From, State = #state{
-  last_id = LastId, data = Data, in_progress = InProgress, repeat = []
+  last_id = LastId,
+  queue = []
 }) ->
   Id = LastId + 1,
-  TryNumber = 0,
   Request = get_new_request(),
-  {reply, {Request, {Id, TryNumber}}, State#state{
-    last_id = Id,
-    data = Data#{Id => {Request, TryNumber}},
-    in_progress = [Id | InProgress]
+  {reply, {Request, Id}, State#state{
+    last_id = Id
   }};
 
 handle_call(get_request, _From, State = #state{
-  data = Data#{Id := {Request, TryNumber}},
-  in_progress = InProgress,
-  repeat = [Id | RemainingFailed]
+  last_id = LastId,
+  queue = [Request | Remaining]
 }) ->
-  NewTryNumber = TryNumber + 1,
-  {reply, {Request, {Id, NewTryNumber}}, State#state{
-    data = Data#{Id => {Request, NewTryNumber}},
-    repeat = RemainingFailed,
-    in_progress = [Id | InProgress]
+  Id = LastId + 1,
+  {reply, {Request, Id}, State#state{
+    last_id = Id,
+    queue = Remaining
   }};
 
 handle_call(_Request, _From, State) -> {reply, ok, State}.
 
-handle_cast({result, {{ok, Result}, {Id, TryNumber}}}, State = #state{
-  data = Data#{Id := {Request, TryNumber}},
-  in_progress = InProgress
-}) ->
-  io:format("~p ~p~n", [Id, Result]),
-  {noreply, State#state{
-    data = Data#{Id => {Request, NewTryNumber}},
-    repeat = RemainingFailed,
-    in_progress = [Id | InProgress]
-  }};
+handle_cast({result, Result, Id, Time}, State) ->
+  io:format("~B:~p | ~p~n", [Id, Result, Time]),
+  {noreply, State};
 
-handle_cast({result, {{error, Reason}, {Id, TryNumber}}}, State = #state{
-  data = Data#{Id := {Request, TryNumber}},
-  repeat = Repeat
+handle_cast({error, Reason, Request, Id}, State = #state{
+  queue = Queue
 }) ->
-  io:format("Error~p~n~p~p~n", [Request, Id, Reason]),
-  NewTryNumber = TryNumber + 1,
+  io:format("___Error___~n~p:~p~n~p~n", [Request, Id, Reason]),
   {noreply, State#state{
-    data = Data#{Id => {Request, NewTryNumber}},
-    repeat = [Id | Repeat]
+    queue = [Request | Queue]
   }};
 
 handle_cast(_Request, State) -> {noreply, State}.
@@ -92,6 +78,3 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%%===================================================================
 
 get_new_request() -> {'utils.getServerTime', #{}}.
-
-result({ok, Result}) -> ok;
-result({error, Reason}) -> io:format("Error~n~p~n", [Reason]).

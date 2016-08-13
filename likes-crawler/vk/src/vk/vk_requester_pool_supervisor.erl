@@ -23,7 +23,7 @@ get_children() -> supervisor:which_children(?MODULE).
 %%====================================================================
 
 init([]) ->
-  Strategy = #{strategy => simple_one_for_one, intensity => 1, period => 5},
+  Strategy = #{strategy => simple_one_for_one, intensity => 10, period => 1},
   ChildSpecification = #{
     id => vk_requester,
     start => {vk_requester, start_link, []}
