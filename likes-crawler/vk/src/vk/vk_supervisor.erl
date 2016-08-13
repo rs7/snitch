@@ -3,7 +3,7 @@
 -behaviour(supervisor).
 
 %% api
--export([start_link/1]).
+-export([start_link/0]).
 
 %% supervisor
 -export([init/1]).
@@ -12,13 +12,13 @@
 %% api
 %%====================================================================
 
-start_link(RequestersCount) -> supervisor:start_link({local, ?MODULE}, ?MODULE, RequestersCount).
+start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 %%====================================================================
 %% supervisor
 %%====================================================================
 
-init(RequestersCount) ->
+init([]) ->
   Strategy = #{strategy => one_for_all, intensity => 0, period => 1},
 
   RequestPoolSpecification = #{
@@ -35,7 +35,7 @@ init(RequestersCount) ->
 
   RequesterPoolControllerSpecification = #{
     id => vk_requester_pool_controller,
-    start => {vk_requester_pool_controller, start_link, [RequestersCount]}
+    start => {vk_requester_pool_controller, start_link, []}
   },
 
   {ok, {Strategy, [

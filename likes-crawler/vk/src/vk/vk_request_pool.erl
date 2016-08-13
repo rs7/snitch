@@ -3,12 +3,12 @@
 -behaviour(gen_server).
 
 %%% api
--export([start_link/0, get_request/0, result/3, error/3]).
+-export([start_link/0, get/0, result/2, error/2]).
 
 %%% gen_server
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
--record(state, {last_id, queue}).
+-record(state, {last_id, queue, in_progress}).
 
 %%%===================================================================
 %%% api
@@ -16,11 +16,11 @@
 
 start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
-get_request() -> gen_server:call(?MODULE, get_request).
+get() -> gen_server:call(?MODULE, get).
 
-result(Result, Id, Time) -> gen_server:cast(?MODULE, {result, Result, Id, Time}).
+result(Result, Id) -> gen_server:cast(?MODULE, {result, Result, Id}).
 
-error(Reason, Request, Id) -> gen_server:cast(?MODULE, {error, Reason, Request, Id}).
+error(Reason, Id) -> gen_server:cast(?MODULE, {error, Reason, Id}).
 
 %%%===================================================================
 %%% gen_server
@@ -28,42 +28,62 @@ error(Reason, Request, Id) -> gen_server:cast(?MODULE, {error, Reason, Request, 
 
 init([]) -> {ok, #state{
   last_id = 0,
-  queue = []
+  queue = [],
+  in_progress = #{}
 }}.
 
-handle_call(get_request, _From, State = #state{
+handle_call(get, _From, State = #state{
   last_id = LastId,
-  queue = []
+  queue = [],
+  in_progress = InProgress
 }) ->
   Id = LastId + 1,
-  Request = get_new_request(),
+  Request = get_new_request(friends),
   {reply, {Request, Id}, State#state{
-    last_id = Id
+    last_id = Id,
+    in_progress = InProgress#{Id => Request}
   }};
 
-handle_call(get_request, _From, State = #state{
+handle_call(get, _From, State = #state{
   last_id = LastId,
-  queue = [Request | Remaining]
+  queue = [Request | Remaining],
+  in_progress = InProgress
 }) ->
   Id = LastId + 1,
   {reply, {Request, Id}, State#state{
     last_id = Id,
-    queue = Remaining
+    queue = Remaining,
+    in_progress = InProgress#{Id => Request}
   }};
 
 handle_call(_Request, _From, State) -> {reply, ok, State}.
 
-handle_cast({result, Result, Id, Time}, State) ->
-  io:format("~B:~p | ~p~n", [Id, Result, Time]),
-  {noreply, State};
-
-handle_cast({error, Reason, Request, Id}, State = #state{
-  queue = Queue
+handle_cast({result, Result, Id}, State = #state{
+  in_progress = InProgress
 }) ->
-  io:format("___Error___~n~p:~p~n~p~n", [Request, Id, Reason]),
-  {noreply, State#state{
-    queue = [Request | Queue]
-  }};
+  case InProgress of
+    #{Id := Request} ->
+      lager:info("~B:~p | ~40P~n", [Id, Request, Result, 10]),
+      {noreply, State#state{
+        in_progress = maps:remove(Id, InProgress)
+      }};
+    _ -> {noreply, State}
+  end;
+
+
+handle_cast({error, Reason, Id}, #state{
+  queue = Queue,
+  in_progress = InProgress
+} = State) ->
+  case InProgress of
+    #{Id := Request} ->
+      lager:warning("~B:~p | ~n~p~n", [Id, Request, Reason]),
+      {noreply, State#state{
+        queue = [Request | Queue],
+        in_progress = maps:remove(Id, InProgress)
+      }};
+    _ -> {noreply, State}
+  end;
 
 handle_cast(_Request, State) -> {noreply, State}.
 
@@ -77,4 +97,6 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%% internal
 %%%===================================================================
 
-get_new_request() -> {'utils.getServerTime', #{}}.
+get_new_request(time) -> {'utils.getServerTime', #{}};
+
+get_new_request(friends) -> {'friends.get', #{user_id => rand:uniform(370000000)}}.

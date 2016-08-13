@@ -3,7 +3,7 @@
 -behaviour(supervisor).
 
 %% api
--export([start_link/0, start_child/0, get_children/0]).
+-export([start_link/0, start_child/1]).
 
 %% supervisor
 -export([init/1]).
@@ -14,9 +14,7 @@
 
 start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
-start_child() -> supervisor:start_child(?MODULE, []).
-
-get_children() -> supervisor:which_children(?MODULE).
+start_child(Sleep) -> supervisor:start_child(?MODULE, [Sleep]).
 
 %%====================================================================
 %% supervisor

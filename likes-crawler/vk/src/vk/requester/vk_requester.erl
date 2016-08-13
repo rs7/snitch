@@ -3,13 +3,10 @@
 -behaviour(gen_server).
 
 %%% api
--export([start_link/0]).
+-export([start_link/1]).
 
 %%% gen_server
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
-
-%%% timer
--export([request/3]).
 
 -record(state, {connection}).
 
@@ -17,17 +14,18 @@
 %%% api
 %%%====================================================================
 
-start_link() -> gen_server:start_link(?MODULE, [], []).
+start_link(Sleep) -> gen_server:start_link(?MODULE, [Sleep], []).
 
 %%%===================================================================
 %%% gen_server
 %%%===================================================================
 
-init([]) ->
+init([Sleep]) ->
+  lager:info("Requester started ~B", [Sleep]),
   case connect() of
     {ok, Pid} ->
       erlang:monitor(process, Pid),
-      erlang:send_after(1000, self(), loop),
+      erlang:send_after(Sleep, self(), loop),
       {ok, #state{connection = Pid}};
     {error, Reason} ->
       {stop, Reason}
@@ -40,7 +38,7 @@ handle_cast(_Request, State) -> {noreply, State}.
 handle_info(loop, State = #state{connection = Connection}) ->
   case loop(Connection) of
     ok ->
-      %self() ! loop,
+      erlang:send_after(0, self(), loop),
       {noreply, State};
     stop ->
       {stop, timeout, State}
@@ -65,11 +63,10 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%%===================================================================
 
 loop(Connection) ->
-  {Request, Id} = vk_request_pool:get_request(),
-  {Time, FunctionResult} = timer:tc(?MODULE, request, [Connection, Request, 1000]),
-  case FunctionResult of
-    {ok, Result} -> vk_request_pool:result(Result, Id, Time div 1000), ok;
-    {error, Reason} -> vk_request_pool:error(Reason, Request, Id), stop
+  {Request, Id} = vk_request_pool:get(),
+  case request(Connection, Request) of
+    {ok, Result} -> vk_request_pool:result(Result, Id), ok;
+    {error, Reason} -> vk_request_pool:error(Reason, Id), stop
   end.
 
 
@@ -79,20 +76,20 @@ loop(Connection) ->
 
 connect() -> shotgun:open("api.vk.com", 443, https).
 
-request(Connection, Request, Timeout) ->
-  Result = shotgun_request(Connection, Request, Timeout),
+request(Connection, Request) ->
+  Result = shotgun_request(Connection, Request),
   case Result of
     {ok, #{status_code := 200, body := Body}} -> parse_body(Body);
     {ok, #{status_code := StatusCode}} -> {error, {status_code, StatusCode}};
     {error, Reason} -> {error, {shotgun, Reason}}
   end.
 
-shotgun_request(Connection, {Method, Params}, Timeout) -> shotgun:post(
+shotgun_request(Connection, {Method, Params}) -> shotgun:post(
   Connection,
   ["/method/", atom_to_list(Method)],
   #{<<"Content-Type">> => <<"application/x-www-form-urlencoded">>},
   to_urlencoded(Params),
-  #{timeout => Timeout}
+  #{timeout => 10000}
 ).
 
 parse_body(Body) ->
