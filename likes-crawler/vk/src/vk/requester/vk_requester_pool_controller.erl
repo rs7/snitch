@@ -21,8 +21,9 @@ start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 %%====================================================================
 
 init([]) ->
+  {ok, RequestersCount} = application:get_env(requesters_count),
   self() ! start_requesters,
-  {ok, #state{requesters_count = 300}}.
+  {ok, #state{requesters_count = RequestersCount}}.
 
 handle_call(_Request, _From, State) -> {noreply, State}.
 
