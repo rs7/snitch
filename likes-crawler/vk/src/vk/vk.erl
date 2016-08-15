@@ -12,7 +12,7 @@
 %% api
 %%====================================================================
 
-start() -> application:ensure_all_started(?MODULE), ok.
+start() -> application:ensure_all_started(?MODULE).
 
 stop() -> application:stop(?MODULE).
 
@@ -20,7 +20,7 @@ stop() -> application:stop(?MODULE).
 %% application
 %%====================================================================
 
-start(_StartType, []) -> vk_supervisor:start_link().
+start(_StartType, []) -> worker_supervisor:start_link(1).
 
 stop(_State) -> ok.
 

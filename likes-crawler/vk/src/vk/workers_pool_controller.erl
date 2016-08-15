@@ -1,4 +1,4 @@
--module(vk_requester_pool_controller).
+-module(workers_pool_controller).
 
 -behaviour(gen_server).
 

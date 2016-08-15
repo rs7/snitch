@@ -1,9 +1,9 @@
--module(vk_requester_pool_supervisor).
+-module(workers_pool_supervisor).
 
 -behaviour(supervisor).
 
 %% api
--export([start_link/0, start_child/1]).
+-export([start_link/0, start_child/0]).
 
 %% supervisor
 -export([init/1]).
@@ -14,7 +14,7 @@
 
 start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
-start_child(Sleep) -> supervisor:start_child(?MODULE, [Sleep]).
+start_child() -> supervisor:start_child(?MODULE, []).
 
 %%====================================================================
 %% supervisor
@@ -23,7 +23,8 @@ start_child(Sleep) -> supervisor:start_child(?MODULE, [Sleep]).
 init([]) ->
   Strategy = #{strategy => simple_one_for_one, intensity => 10, period => 1},
   ChildSpecification = #{
-    id => vk_requester,
-    start => {vk_requester, start_link, []}
+    id => worker,
+    start => {worker_supervisor, start_link, []},
+    type => supervisor
   },
   {ok, {Strategy, [ChildSpecification]}}.
