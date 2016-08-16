@@ -23,8 +23,9 @@ call(Connection, Request) -> gen_statem:call(Connection, {request, Request}, inf
 start_shotgun_connection(WorkerId) ->
   case shotgun:open("api.vk.com", 443, https) of
     {ok, Pid} ->
-      gproc:reg({n, l, {shotgun_connection, WorkerId}}, Pid),
-      timer:apply_after(5000, erlang, exit, [Pid, ok]),
+      link(Pid),
+      gproc:reg_other({n, l, {shotgun_connection, WorkerId}}, Pid, Pid),
+      timer:apply_after(5000, shotgun, close, [Pid]),
       {ok, Pid};
     {error, Reason} -> {error, Reason}
   end.
@@ -56,12 +57,14 @@ init(WorkerId) ->
 %%handle_event({call, From}, {request, Request}, State, #data{connection = Connection} = Data) ->
 %%  {keep_state, Data, [{reply, From, {error, not_allowed}}]};
 
+handle_event(internal, Event, State, Data) -> lager:info("internal event ~p ~p ~p", [Event, State, Data]);
+
 handle_event(info, {gproc, registered, _Ref, _Key}, {_ConnectMode, BusyMode}, Data) ->
-  lager:info("connected"),
+  lager:info("shotgun_connection connected"),
   {next_state, {connected, BusyMode}, Data};
 
 handle_event(info, {gproc, unreg, _Ref, _Key}, {_ConnectMode, BusyMode}, Data) ->
-  lager:info("disconnected"),
+  lager:info("shotgun_connection disconnected"),
   {next_state, {disconnected, BusyMode}, Data}.
 
 terminate(_Reason, _State, _Data) -> ok.
