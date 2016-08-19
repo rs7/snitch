@@ -23,13 +23,18 @@ init([]) ->
 
   Specifications = [
     #{
-      id => pool,
-      start => {pool, start_link, []},
+      id => counter,
+      start => {user_counter, start_link, []},
       type => worker
     },
     #{
-      id => users,
-      start => {users, start_link, []},
+      id => pool,
+      start => {pool, start_link, [fun friends_stat:process/2]},
+      type => worker
+    },
+    #{
+      id => process,
+      start => {friends_stat, start_link, []},
       type => worker
     }
   ],

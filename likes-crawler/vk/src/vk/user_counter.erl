@@ -1,4 +1,4 @@
--module(users).
+-module(user_counter).
 
 -behaviour(gen_server).
 
@@ -8,7 +8,7 @@
 %%% behaviour
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
--record(state, {user, failed, in_progress}).
+-record(state, {user, failed}).
 
 %%%===================================================================
 %%% api
@@ -26,21 +26,20 @@ success(User) -> gen_server:cast(?MODULE, {success, User}).
 %%% behaviour
 %%%===================================================================
 
-init([]) -> {ok, #state{user = 1, failed = [], in_progress = #{}}}.
+init([]) -> {ok, #state{user = 1, failed = []}}.
 
-handle_call(get, _From, #state{user = User, failed = [], in_progress = InProgress} = State) ->
-  {reply, User, State#state{user = next_user(User), in_progress = InProgress#{User => 1}}};
+handle_call(get, _From, #state{user = User, failed = []} = State) ->
+  {reply, User, State#state{user = next_user(User)}};
 
-handle_call(get, _From, #state{failed = [User | Remaining], in_progress = InProgress} = State) ->
-  {reply, User, State#state{failed = Remaining, in_progress = InProgress#{User => 1}}};
+handle_call(get, _From, #state{failed = [User | Remaining]} = State) ->
+  {reply, User, State#state{failed = Remaining}};
 
 handle_call(_Request, _From, State) -> {reply, ok, State}.
 
-handle_cast({fail, User}, #state{failed = Failed, in_progress = InProgress} = State) ->
-  {noreply, State#state{failed = [User | Failed], in_progress = maps:remove(User, InProgress)}};
+handle_cast({fail, User}, #state{failed = Failed} = State) ->
+  {noreply, State#state{failed = [User | Failed]}};
 
-handle_cast({success, User}, #state{in_progress = InProgress} = State) ->
-  {noreply, State#state{in_progress = maps:remove(User, InProgress)}};
+handle_cast({success, _User}, State) -> {noreply, State};
 
 handle_cast(_Request, State) -> {noreply, State}.
 
@@ -54,4 +53,5 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%% internal
 %%%===================================================================
 
+next_user(370000000) -> 1;
 next_user(User) -> User + 1.

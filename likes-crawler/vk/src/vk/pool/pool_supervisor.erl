@@ -3,7 +3,7 @@
 -behaviour(supervisor).
 
 %%% api
--export([start_link/0, start_worker/1]).
+-export([start_link/1, start_worker/1]).
 
 %%% behaviour
 -export([init/1]).
@@ -12,7 +12,7 @@
 %%% api
 %%%===================================================================
 
-start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+start_link(Process) -> supervisor:start_link({local, ?MODULE}, ?MODULE, Process).
 
 start_worker(Id) -> supervisor:start_child(?MODULE, [Id]).
 
@@ -20,12 +20,12 @@ start_worker(Id) -> supervisor:start_child(?MODULE, [Id]).
 %%% behaviour
 %%%===================================================================
 
-init([]) ->
+init(Process) ->
   Strategy = #{strategy => simple_one_for_one, intensity => 10, period => 1},
 
   ChildSpecification = #{
     id => worker,
-    start => {worker, start_link, []},
+    start => {worker, start_link, [Process]},
     type => supervisor
   },
 

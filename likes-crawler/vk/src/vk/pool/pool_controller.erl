@@ -29,7 +29,7 @@ handle_call(_Request, _From, State) -> {noreply, State}.
 
 handle_cast(_Request, State) -> {noreply, State}.
 
-handle_info(start_worker, #state{worker_count = _WorkerCount, started = _WorkerCount + 1} = State) ->
+handle_info(start_worker, #state{worker_count = WorkerCount, started = Started} = State) when Started >= WorkerCount ->
   {noreply, State};
 
 handle_info(start_worker, #state{started = Started} = State) ->
