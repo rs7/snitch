@@ -1,9 +1,9 @@
--module(worker).
+-module(likes_supervisor).
 
 -behaviour(supervisor).
 
 %%% api
--export([start_link/2]).
+-export([start_link/0]).
 
 %%% behaviour
 -export([init/1]).
@@ -12,29 +12,24 @@
 %%% api
 %%%===================================================================
 
-start_link(Process, WorkerId) -> supervisor:start_link(?MODULE, {WorkerId, Process}).
+start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 %%%===================================================================
 %%% behaviour
 %%%===================================================================
 
-init({WorkerId, Process}) ->
-  Strategy = #{strategy => rest_for_one, intensity => 5, period => 1},
+init([]) ->
+  Strategy = #{strategy => one_for_all, intensity => 1, period => 5},
 
   Specifications = [
     #{
       id => process,
-      start => {process, start_link, [WorkerId, Process]},
+      start => {process, start_link, []},
       type => worker
     },
     #{
-      id => requester,
-      start => {requester, start_link, [WorkerId]},
-      type => worker
-    },
-    #{
-      id => connection,
-      start => {requester, open_connection, [WorkerId]},
+      id => pool,
+      start => {pool, start_link, []},
       type => worker
     }
   ],

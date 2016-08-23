@@ -1,4 +1,4 @@
--module(requester).
+-module(worker_requester).
 
 -behaviour(gen_server).
 
@@ -22,7 +22,7 @@ open_connection(WorkerId) ->
   case shotgun:open("api.vk.com", 443, https) of
     {ok, Pid} ->
       link(Pid),
-      gproc:reg_other({n, l, {shotgun_connection, WorkerId}}, Pid, Pid),
+      gproc:reg_other({n, l, {worker_connection, WorkerId}}, Pid, Pid),
       {ok, Pid};
     {error, Reason} -> {error, Reason}
   end.
@@ -36,7 +36,7 @@ init(WorkerId) ->
   {ok, #state{worked_id = WorkerId}}.
 
 handle_call({request, Request}, _From, #state{worked_id = WorkerId} = State) ->
-  {_Pid, Connection} = gproc:await({n, l, {shotgun_connection, WorkerId}}),
+  {_Pid, Connection} = gproc:await({n, l, {worker_connection, WorkerId}}),
   Result = repeatable_request(Connection, Request, 1),
   {reply, Result, State};
 
@@ -55,9 +55,10 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%%===================================================================
 
 repeatable_request(Connection, Request, RetryNumber) ->
+  lager:debug("~B/~p", [RetryNumber, Request]),
   case request(Connection, Request) of
-    {ok, Result} -> Result;
-    {error, Reason} ->
+    {result, Result} -> Result;
+    {retry, Reason} ->
       error_warning(Reason, Request, RetryNumber),
       timer:sleep(retry_timeout(RetryNumber)),
       repeatable_request(Connection, Request, RetryNumber + 1)
@@ -67,9 +68,20 @@ request(Connection, Request) ->
   Result = shotgun_request(Connection, Request),
   case Result of
     {ok, #{status_code := 200, body := Body}} -> parse_body(Body);
-    {ok, #{status_code := StatusCode}} -> {error, {status_code, StatusCode}};
-    {error, Reason} -> {error, {shotgun, Reason}}
+    {ok, #{status_code := StatusCode}} -> {retry, {status_code, StatusCode}};
+    {error, Reason} -> {retry, {shotgun, Reason}}
   end.
+
+parse_body(Body) ->
+  case jsone:try_decode(Body) of
+    {ok, #{<<"response">> := Response}, _Remainings} -> {result, {response, Response}};
+    {ok, #{<<"error">> := #{<<"error_code">> := Code}}, _Remainings} -> vk_error(Code);
+    {error, Reason} -> {retry, {json, Reason}}
+  end.
+
+vk_error(1) -> {retry, {vk_error, 1}};
+vk_error(10) -> {retry, {vk_error, 10}};
+vk_error(Code) -> {result, {error, Code}}.
 
 shotgun_request(Connection, {Method, Params}) -> shotgun:post(
   Connection,
@@ -79,24 +91,21 @@ shotgun_request(Connection, {Method, Params}) -> shotgun:post(
   #{timeout => 10000}
 ).
 
-parse_body(Body) ->
-  case jsone:try_decode(Body) of
-    {ok, #{<<"response">> := Response}, _Remainings} -> {ok, {response, Response}};
-    {ok, #{<<"error">> := #{<<"error_code">> := Code}}, _Remainings} -> {ok, {error, Code}};
-    {error, Reason} -> {error, {json, Reason}}
-  end.
-
 retry_timeout(1) -> 10 * 1000;
-retry_timeout(2) -> 60 * 1000;
-retry_timeout(3) -> 120 * 1000;
-retry_timeout(5) -> (120 + rand:uniform(180)) * 1000.
+retry_timeout(2) -> rand_seconds(30, 60);
+retry_timeout(3) -> rand_seconds(60, 120);
+retry_timeout(5) -> rand_seconds(120, 300).
 
-error_warning(_Reason, _Request, 1) -> lager:info("Request error");
-error_warning(Reason, Request, TryNumber) -> lager:warning("Request error ~B times~n~p~n~p", [TryNumber, Request, Reason]).
+error_warning(_Reason, _Request, TryNumber) when TryNumber < 5 -> ok;
+error_warning(Reason, Request, TryNumber) -> lager:warning(
+  "Request error ~B times~n~p~n~p", [TryNumber, Request, Reason]
+).
 
 %%%===================================================================
 %%% util
 %%%===================================================================
+
+rand_seconds(From, To) -> (From + rand:uniform(To - From)) * 1000.
 
 to_urlencoded(Params) -> string:join(
   [atom_to_list(Key) ++ "=" ++ to_list(Value) || {Key, Value} <- maps:to_list(Params)], "&"

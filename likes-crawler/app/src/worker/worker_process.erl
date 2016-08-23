@@ -1,4 +1,4 @@
--module(process).
+-module(worker_process).
 
 -behaviour(gen_server).
 
@@ -30,11 +30,13 @@ handle_call(_Request, _From, State) -> {reply, ok, State}.
 handle_cast(_Request, State) -> {noreply, State}.
 
 handle_info(loop, #state{worker_id = WorkerId, process = Process} = State) ->
-  User = user_counter:get(),
-  Call = call_function(WorkerId),
-  apply(Process, [User, Call]),
-  self() ! loop,
-  {noreply, State}.
+  case Process(call_function(WorkerId)) of
+    next ->
+      self() ! loop,
+      {noreply, State};
+    stop ->
+      {noreply, State, hibernate}
+  end.
 
 terminate(_Reason, _State) -> ok.
 
@@ -45,7 +47,10 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%%===================================================================
 
 call_function(WorkerId) ->
-  fun (Request) ->
-    {_Pid, Requester} = gproc:await({n, l, {requester, WorkerId}}),
-    requester:call(Requester, Request)
+  fun(Request) ->
+    call(WorkerId, Request)
   end.
+
+call(WorkerId, Request) ->
+  {_Pid, Requester} = gproc:await({n, l, {worker_requester, WorkerId}}),
+  worker_requester:call(Requester, Request).

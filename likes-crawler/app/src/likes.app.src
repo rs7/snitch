@@ -1,10 +1,10 @@
 {
-  application, vk,
+  application, likes,
   [
-    {description, "Snitch VK application"},
+    {description, "Snitch Likes application"},
     {vsn, "0.2.0"},
     {registered, []},
-    {mod, {vk, []}},
+    {mod, {likes, []}},
     {applications, [kernel, stdlib, shotgun, lager, gproc]},
     {env, []},
     {modules, []},

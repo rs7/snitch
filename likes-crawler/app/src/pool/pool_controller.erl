@@ -35,7 +35,7 @@ handle_info(start_worker, #state{worker_count = WorkerCount, started = Started} 
 handle_info(start_worker, #state{started = Started} = State) ->
   WorkerId = Started + 1,
   start_worker(WorkerId),
-  erlang:send_after(1000, self(), start_worker),
+  erlang:send_after(200, self(), start_worker),
   {noreply, State#state{started = Started + 1}};
 
 handle_info({'DOWN', _Reference, process, Pid, Reason}, State) ->

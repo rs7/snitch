@@ -3,7 +3,7 @@
 -behaviour(supervisor).
 
 %%% api
--export([start_link/1]).
+-export([start_link/0]).
 
 %%% supervisor
 -export([init/1]).
@@ -12,13 +12,15 @@
 %%% api
 %%%===================================================================
 
-start_link(Process) -> supervisor:start_link({local, ?MODULE}, ?MODULE, [Process]).
+start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 %%%===================================================================
 %%% supervisor
 %%%===================================================================
 
-init([Process]) ->
+init([]) ->
+  Process = process:process_func(),
+
   Strategy = #{strategy => one_for_all, intensity => 1, period => 5},
 
   Specifications = [
