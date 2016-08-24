@@ -30,6 +30,6 @@ album_request({Owner, Album}) -> {
     owner_id => Owner,
     album_id => Album,
     extended => 1,
-    v => '5.52'
+    v => '5.53'
   }
 }.

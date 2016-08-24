@@ -24,6 +24,6 @@ likes_request({Owner, Item}) -> {
     type => photo,
     owner_id => Owner,
     item_id => Item,
-    v => '5.52'
+    v => '5.53'
   }
 }.

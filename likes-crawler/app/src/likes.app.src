@@ -5,7 +5,13 @@
     {vsn, "0.2.0"},
     {registered, []},
     {mod, {likes, []}},
-    {applications, [kernel, stdlib, shotgun, lager, gproc]},
+    {applications, [
+      kernel,
+      stdlib,
+      gun,
+      lager,
+      gproc
+    ]},
     {env, []},
     {modules, []},
     {maintainers, []},
