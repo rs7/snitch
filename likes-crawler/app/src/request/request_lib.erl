@@ -1,49 +1,25 @@
 -module(request_lib).
 
 %%% api
--export([open/0, close/1, request/3]).
-
--define(DISABLE_KEEPALIVE, 16#7FFFFFF).
+-export([path/1, query/1, path_with_query/2]).
 
 %%%===================================================================
 %%% api
 %%%===================================================================
 
-open() -> gun:open("api.vk.com", 80, #{
-  retry => 1,
-  retry_timeout => 0,
-  http_opts => #{keepalive => ?DISABLE_KEEPALIVE}
-}).
+path(Method) -> [<<"/method/">>, atom_to_binary(Method)].
 
-close(Connection) -> gun:shutdown(Connection).
+query(Params) -> list_to_binary(
+  lists:map(fun key_value_to_binary/1, maps:to_list(Params)),
+  $&
+).
 
-request(Connection, {Method, Params}, get) ->
-  gun:get(
-    Connection,
-    path_with_params(Method, Params)
-  );
-
-request(Connection, {Method, Params}, post) ->
-  gun:post(
-    Connection,
-    method_to_endpoint(Method),
-    [{<<"Content-Type">>, <<"application/x-www-form-urlencoded">>}],
-    to_urlencoded(Params)
-  ).
+path_with_query(Method, Params) when map_size(Params) == 0 -> path(Method);
+path_with_query(Method, Params) -> [path(Method), $?, query(Params)].
 
 %%%===================================================================
 %%% internal
 %%%===================================================================
-
-path_with_params(Method, Params) when map_size(Params) == 0 -> method_to_endpoint(Method);
-path_with_params(Method, Params) -> [method_to_endpoint(Method), $?, to_urlencoded(Params)].
-
-method_to_endpoint(Method) -> [<<"/method/">>, atom_to_binary(Method)].
-
-to_urlencoded(Params) -> list_to_binary(
-  lists:map(fun key_value_to_binary/1, maps:to_list(Params)),
-  $&
-).
 
 key_value_to_binary({Key, Value}) -> [atom_to_binary(Key), $=, value_to_binary(Value)].
 
@@ -54,15 +30,6 @@ value_to_binary(Value) when is_list(Value) -> list_to_binary(lists:map(fun value
 atom_to_binary(Atom) when is_atom(Atom) -> atom_to_binary(Atom, latin1).
 
 list_to_binary(List, Separator) when is_list(List) -> lists:join(Separator, List).
-
-parse_body(Body) ->
-  case jsone:try_decode(Body) of
-    {ok, #{<<"response">> := Response}, <<>>} -> {ok, {response, Response}};
-    {ok, #{<<"error">> := #{<<"error_code">> := ErrorCode}}, <<>>} -> {ok, {error, ErrorCode}};
-    {ok, Result, <<>>} -> {error, {unexpected_result, Result}};
-    {ok, _Result, Remainings} -> {error, {unexpected_remainings, Remainings}};
-    {error, Reason} -> {error, Reason}
-  end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

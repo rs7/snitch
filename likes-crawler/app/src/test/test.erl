@@ -22,7 +22,7 @@ loop(#state{pid = Pid, monitor = MonitorRef} = State) ->
 
   Message = receive M -> M end,
 
-  %io:format(">> ~p~n", [Message]),
+  io:format(">> ~p~n", [Message]),
 
   case Message of
     {gun_up, Pid, _Protocol} -> loop(State);
