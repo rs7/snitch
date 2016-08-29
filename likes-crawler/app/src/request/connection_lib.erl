@@ -17,7 +17,8 @@ open() -> gun:open("api.vk.com", 80, #{
 
 close(Connection) -> gun:shutdown(Connection).
 
-request(Connection, Request) -> request(Connection, Request, get).
+request(Connection, Request) ->
+  request(Connection, Request, get).
 
 %%%===================================================================
 %%% internal

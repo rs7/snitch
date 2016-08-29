@@ -18,26 +18,20 @@
 %%%===================================================================
 
 start_link() ->
-  case gen_event:start_link() of
-    {ok, Pid} ->
-      case gen_event:add_handler(Pid, ?MODULE, []) of
-        ok -> {ok, Pid};
-        {error, Reason} -> {error, Reason};
-        {'EXIT', Reason} -> {error, Reason}
-      end;
-    {error, Reason} -> {error, Reason}
-  end.
+  {ok, Pid} = gen_event:start_link(),
+  ok = gen_event:add_handler(Pid, ?MODULE, []),
+  {ok, Pid}.
 
 request(Pid, Request) ->
-  io:format("request1", []),
-  gen_event:call(Pid, ?MODULE, {request, Request}).
+  StreamRef = gen_event:call(Pid, ?MODULE, {request, Request}),
+  ok = gen_event:add_handler(Pid, request_event, StreamRef).
 
 %%%===================================================================
 %%% behaviour
 %%%===================================================================
 
 init([]) ->
-  ConnectionPid = connection_lib:open(),
+  {ok, ConnectionPid} = connection_lib:open(),
   ConnectionMonitorRef = monitor(process, ConnectionPid),
   {ok, #state{
     pid = ConnectionPid,
@@ -46,16 +40,11 @@ init([]) ->
 
 handle_event(_Event, State) -> {ok, State}.
 
-handle_call(
-  {request, Request},
-  #state{
-    pid = ConnectionPid
-  } = State
-) ->
-  io:format("request", []),
+handle_call(get_connection_pid, #state{pid = ConnectionPid} = State) -> {ok, ConnectionPid, State};
+
+handle_call({request, Request}, #state{pid = ConnectionPid} = State) ->
   StreamRef = connection_lib:request(ConnectionPid, Request),
-  gen_event:add_handler(self(), request_event, StreamRef),
-  {ok, ok, State};
+  {ok, StreamRef, State};
 
 handle_call(_Request, State) -> {ok, reply, State}.
 
@@ -66,13 +55,16 @@ handle_info({gun_up, ConnPid, Protocol}, State) -> {ok, State};
 handle_info({gun_down, ConnPid, Protocol, Reason, KilledStreams, UnprocessedStreams}, State) -> {ok, State};
 
 handle_info({gun_response, ConnPid, StreamRef, IsFin, Status, Headers} = Event, State) ->
-  io:format("info", []),
   gen_event:notify(self(), Event),
   {ok, State};
 
-handle_info({gun_data, ConnPid, StreamRef, IsFin, Data}, State) -> {ok, State};
+handle_info({gun_data, ConnPid, StreamRef, IsFin, Data} = Event, State) ->
+  gen_event:notify(self(), Event),
+  {ok, State};
 
-handle_info({gun_error, ConnPid, StreamRef, Reason}, State) -> {ok, State};
+handle_info({gun_error, ConnPid, StreamRef, Reason} = Event, State) ->
+  gen_event:notify(self(), Event),
+  {ok, State};
 
 handle_info({gun_error, ConnPid, Reason}, State) -> {ok, State}.
 
