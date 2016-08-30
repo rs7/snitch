@@ -1,0 +1,720 @@
+===> Verifying dependencies...
+===> Compiling likes
+===> The rebar3 shell is a development tool; to deploy applications in production, consider using releases (http://www.rebar3.org/v3.0/docs/
+releases)
+Eshell V8.0  (abort with ^G)
+1> debug:start(gun).
+19:13:43.745 [info] Application lager started on node nonode@nohost
+19:13:43.824 [debug] Supervisor inet_gethost_native_sup started undefined at pid <0.228.0>
+19:13:43.824 [debug] Supervisor kernel_safe_sup started inet_gethost_native:start_link() at pid <0.227.0>
+(<0.224.0>) << {request,<0.183.0>,#Ref<0.0.1.2864>,<<"GET">>,
+                        <<"/method/users.get?user_id=1">>,[]} (Timestamp: {1472,
+                                                                           559223,
+                                                                           835000})
+(<0.224.0>) << {request,<0.183.0>,#Ref<0.0.1.2865>,<<"GET">>,
+                        <<"/method/users.get?user_id=51">>,[]} (Timestamp: {1472,
+                                                                            559223,
+                                                                            835001})
+[#Ref<0.0.1.2864>,#Ref<0.0.1.2865>,#Ref<0.0.1.2866>]
+(<0.224.0>) << {request,<0.183.0>,#Ref<0.0.1.2866>,<<"GET">>,
+                        <<"/method/users.get?user_id=1052662">>,[]} (Timestamp: {1472,
+                                                                                 559223,
+                                                                                 835002})
+2> (<0.224.0>) in {inet_gethost_native,getit,2} (Timestamp: {1472,559223,835003})
+2> (<0.224.0>) out {inet_gethost_native,getit,2} (Timestamp: {1472,559223,835004})
+2> (<0.224.0>) << {#Ref<0.0.1.2858>,
+                {ok,<<4,0,0,0,3,87,240,165,72,87,240,165,73,87,240,165,74,0,
+                      0,0,1,97,112,105,46,118,107,46,99,111,109,0>>}} (Timestamp: {1472,
+                                                                                   559223,
+                                                                                   835005})
+2> (<0.224.0>) in {inet_gethost_native,getit,2} (Timestamp: {1472,559223,835006})
+2> (<0.224.0>) gc_minor_start [{wordsize,6},
+ {old_heap_block_size,0},
+ {heap_block_size,376},
+ {mbuf_size,60},
+ {recent_size,72},
+ {stack_size,35},
+ {old_heap_size,0},
+ {heap_size,339},
+ {bin_vheap_size,4},
+ {bin_vheap_block_size,46422},
+ {bin_old_vheap_size,0},
+ {bin_old_vheap_block_size,46422}] (Timestamp: {1472,559223,835007})
+2> (<0.224.0>) gc_minor_end [{wordsize,440},
+ {old_heap_block_size,987},
+ {heap_block_size,987},
+ {mbuf_size,0},
+ {recent_size,95},
+ {stack_size,35},
+ {old_heap_size,68},
+ {heap_size,155},
+ {bin_vheap_size,4},
+ {bin_vheap_block_size,46422},
+ {bin_old_vheap_size,0},
+ {bin_old_vheap_block_size,46422}] (Timestamp: {1472,559223,835008})
+2> (<0.224.0>) out {inet_gethost_native,getit,2} (Timestamp: {1472,559223,835009})
+2> (<0.224.0>) in {inet_gethost_native,getit,2} (Timestamp: {1472,559223,835010})
+2> (<0.224.0>) link #Port<0.49409> (Timestamp: {1472,559223,835011})
+2> (<0.224.0>) out {inet_gethost_native,getit,2} (Timestamp: {1472,559223,835012})
+2> (<0.224.0>) in {inet_gethost_native,getit,2} (Timestamp: {1472,559223,835013})
+2> (<0.224.0>) out {inet_gethost_native,getit,2} (Timestamp: {1472,559223,835014})
+2> (<0.224.0>) in {inet_gethost_native,getit,2} (Timestamp: {1472,559223,835015})
+2> (<0.224.0>) out {inet_gethost_native,getit,2} (Timestamp: {1472,559223,835016})
+2> (<0.224.0>) in {inet_gethost_native,getit,2} (Timestamp: {1472,559223,835017})
+2> (<0.224.0>) out {inet_gethost_native,getit,2} (Timestamp: {1472,559223,835018})
+2> (<0.224.0>) in {inet_gethost_native,getit,2} (Timestamp: {1472,559223,835019})
+2> (<0.224.0>) out {inet_gethost_native,getit,2} (Timestamp: {1472,559223,835020})
+2> (<0.224.0>) in {inet_gethost_native,getit,2} (Timestamp: {1472,559223,835021})
+2> (<0.224.0>) out {prim_inet,connect0,3} (Timestamp: {1472,559223,835022})
+2> (<0.224.0>) << {inet_async,#Port<0.49409>,0,ok} (Timestamp: {1472,559223,
+                                                             882000})
+2> (<0.224.0>) in {prim_inet,connect0,3} (Timestamp: {1472,559223,882001})
+2> (<0.224.0>) call gun:up/4 (Timestamp: {1472,559223,882002})
+2> (<0.224.0>) call gun_http:init/4 (Timestamp: {1472,559223,882003})
+2> (<0.224.0>) returned from gun_http:init/4 -> {http_state,<0.183.0>,
+                                              #Port<0.49409>,ranch_tcp,
+                                              'HTTP/1.1',keepalive,<<>>,[],
+                                              head,undefined,head} (Timestamp: {1472,
+                                                                                559223,
+                                                                                882004})
+2> (<0.224.0>) returning to gun:up/4 (Timestamp: {1472,559223,882005})
+2> (<0.224.0>) call gun_http:name/0 (Timestamp: {1472,559223,882006})
+2> (<0.224.0>) returned from gun_http:name/0 -> http (Timestamp: {1472,559223,
+                                                               882007})
+2> (<0.224.0>) returning to gun:up/4 (Timestamp: {1472,559223,882008})
+2> (<0.224.0>) <0.183.0> ! {gun_up,<0.224.0>,http} (Timestamp: {1472,559223,
+                                                             882009})
+2> (<0.224.0>) call gun:before_loop/1 (Timestamp: {1472,559223,882010})
+2> (<0.224.0>) call gun:loop/1 (Timestamp: {1472,559223,882011})
+2> (<0.224.0>) out {prim_inet,connect0,3} (Timestamp: {1472,559223,882012})
+2> (<0.224.0>) in {prim_inet,connect0,3} (Timestamp: {1472,559223,882013})
+2> (<0.224.0>) call gun_http:request/7 (Timestamp: {1472,559223,882014})
+2> (<0.224.0>) gc_minor_start [{wordsize,11},
+ {old_heap_block_size,987},
+ {heap_block_size,987},
+ {mbuf_size,60},
+ {recent_size,95},
+ {stack_size,29},
+ {old_heap_size,68},
+ {heap_size,954},
+ {bin_vheap_size,4},
+ {bin_vheap_block_size,46422},
+ {bin_old_vheap_size,0},
+ {bin_old_vheap_block_size,46422}] (Timestamp: {1472,559223,882015})
+2> (<0.224.0>) gc_minor_end [{wordsize,1143},
+ {old_heap_block_size,987},
+ {heap_block_size,1598},
+ {mbuf_size,0},
+ {recent_size,30},
+ {stack_size,29},
+ {old_heap_size,119},
+ {heap_size,90},
+ {bin_vheap_size,0},
+ {bin_vheap_block_size,46422},
+ {bin_old_vheap_size,0},
+ {bin_old_vheap_block_size,46422}] (Timestamp: {1472,559223,882016})
+2> (<0.224.0>) call gun_http:conn_from_headers/2 (Timestamp: {1472,559223,882017})
+2> (<0.224.0>) returned from gun_http:conn_from_headers/2 -> keepalive (Timestamp: {1472,
+                                                                                 559223,
+                                                                                 882018})
+2> (<0.224.0>) returning to gun_http:request/7 (Timestamp: {1472,559223,882019})
+2> (<0.224.0>) call gun_http:request_io_from_headers/1 (Timestamp: {1472,559223,
+                                                                 882020})
+2> (<0.224.0>) returned from gun_http:request_io_from_headers/1 -> head (Timestamp: {1472,
+                                                                                  559223,
+                                                                                  882021})
+2> (<0.224.0>) returning to gun_http:request/7 (Timestamp: {1472,559223,882022})
+2> (<0.224.0>) code_server ! {code_call,<0.224.0>,{ensure_loaded,cow_http}} (Timestamp: {1472,
+                                                                                      559223,
+                                                                                      882023})
+2> (<0.224.0>) out {code_server,call,1} (Timestamp: {1472,559223,882024})
+2> (<0.224.0>) << {code_server,{module,cow_http}} (Timestamp: {1472,559223,
+                                                            882025})
+2> (<0.224.0>) in {code_server,call,1} (Timestamp: {1472,559223,882026})
+2> (<0.224.0>) out {code_server,call,1} (Timestamp: {1472,559223,882027})
+2> (<0.224.0>) << {inet_reply,#Port<0.49409>,ok} (Timestamp: {1472,559223,882028})
+2> (<0.224.0>) in {code_server,call,1} (Timestamp: {1472,559223,882029})
+2> (<0.224.0>) call gun_http:new_stream/3 (Timestamp: {1472,559223,882030})
+2> (<0.224.0>) returned from gun_http:new_stream/3 -> {http_state,<0.183.0>,
+                                                    #Port<0.49409>,ranch_tcp,
+                                                    'HTTP/1.1',keepalive,<<>>,
+                                                    [{#Ref<0.0.1.2864>,
+                                                      <<"GET">>,true}],
+                                                    head,undefined,head} (Timestamp: {1472,
+                                                                                      559223,
+                                                                                      882031})
+2> (<0.224.0>) returned from gun_http:request/7 -> {http_state,<0.183.0>,
+                                                 #Port<0.49409>,ranch_tcp,
+                                                 'HTTP/1.1',keepalive,<<>>,
+                                                 [{#Ref<0.0.1.2864>,<<"GET">>,
+                                                   true}],
+                                                 head,undefined,head} (Timestamp: {1472,
+                                                                                   559223,
+                                                                                   882032})
+2> (<0.224.0>) returning to gun:loop/1 (Timestamp: {1472,559223,882033})
+2> (<0.224.0>) call gun:loop/1 (Timestamp: {1472,559223,882034})
+2> (<0.224.0>) out {code_server,call,1} (Timestamp: {1472,559223,882035})
+2> (<0.224.0>) in {code_server,call,1} (Timestamp: {1472,559223,882036})
+2> (<0.224.0>) call gun_http:request/7 (Timestamp: {1472,559223,882037})
+2> (<0.224.0>) call gun_http:conn_from_headers/2 (Timestamp: {1472,559223,882038})
+2> (<0.224.0>) returned from gun_http:conn_from_headers/2 -> keepalive (Timestamp: {1472,
+                                                                                 559223,
+                                                                                 882039})
+2> (<0.224.0>) returning to gun_http:request/7 (Timestamp: {1472,559223,882040})
+2> (<0.224.0>) call gun_http:request_io_from_headers/1 (Timestamp: {1472,559223,
+                                                                 882041})
+2> (<0.224.0>) returned from gun_http:request_io_from_headers/1 -> head (Timestamp: {1472,
+                                                                                  559223,
+                                                                                  882042})
+2> (<0.224.0>) returning to gun_http:request/7 (Timestamp: {1472,559223,882043})
+2> (<0.224.0>) out {code_server,call,1} (Timestamp: {1472,559223,882044})
+2> (<0.224.0>) << {inet_reply,#Port<0.49409>,ok} (Timestamp: {1472,559223,882045})
+2> (<0.224.0>) in {code_server,call,1} (Timestamp: {1472,559223,882046})
+2> (<0.224.0>) call gun_http:new_stream/3 (Timestamp: {1472,559223,882047})
+2> (<0.224.0>) returned from gun_http:new_stream/3 -> {http_state,<0.183.0>,
+                                                    #Port<0.49409>,ranch_tcp,
+                                                    'HTTP/1.1',keepalive,<<>>,
+                                                    [{#Ref<0.0.1.2864>,
+                                                      <<"GET">>,true},
+                                                     {#Ref<0.0.1.2865>,
+                                                      <<"GET">>,true}],
+                                                    head,undefined,head} (Timestamp: {1472,
+                                                                                      559223,
+                                                                                      882048})
+2> (<0.224.0>) returned from gun_http:request/7 -> {http_state,<0.183.0>,
+                                                 #Port<0.49409>,ranch_tcp,
+                                                 'HTTP/1.1',keepalive,<<>>,
+                                                 [{#Ref<0.0.1.2864>,<<"GET">>,
+                                                   true},
+                                                  {#Ref<0.0.1.2865>,<<"GET">>,
+                                                   true}],
+                                                 head,undefined,head} (Timestamp: {1472,
+                                                                                   559223,
+                                                                                   882049})
+2> (<0.224.0>) returning to gun:loop/1 (Timestamp: {1472,559223,882050})
+2> (<0.224.0>) call gun:loop/1 (Timestamp: {1472,559223,882051})
+2> (<0.224.0>) out {code_server,call,1} (Timestamp: {1472,559223,882052})
+2> (<0.224.0>) in {code_server,call,1} (Timestamp: {1472,559223,882053})
+2> (<0.224.0>) call gun_http:request/7 (Timestamp: {1472,559223,882054})
+2> (<0.224.0>) call gun_http:conn_from_headers/2 (Timestamp: {1472,559223,882055})
+2> (<0.224.0>) returned from gun_http:conn_from_headers/2 -> keepalive (Timestamp: {1472,
+                                                                                 559223,
+                                                                                 882056})
+2> (<0.224.0>) returning to gun_http:request/7 (Timestamp: {1472,559223,882057})
+2> (<0.224.0>) call gun_http:request_io_from_headers/1 (Timestamp: {1472,559223,
+                                                                 882058})
+2> (<0.224.0>) returned from gun_http:request_io_from_headers/1 -> head (Timestamp: {1472,
+                                                                                  559223,
+                                                                                  882059})
+2> (<0.224.0>) returning to gun_http:request/7 (Timestamp: {1472,559223,882060})
+2> (<0.224.0>) out {code_server,call,1} (Timestamp: {1472,559223,882061})
+2> (<0.224.0>) << {inet_reply,#Port<0.49409>,ok} (Timestamp: {1472,559223,882062})
+2> (<0.224.0>) in {code_server,call,1} (Timestamp: {1472,559223,882063})
+2> (<0.224.0>) call gun_http:new_stream/3 (Timestamp: {1472,559223,882064})
+2> (<0.224.0>) returned from gun_http:new_stream/3 -> {http_state,<0.183.0>,
+                                                    #Port<0.49409>,ranch_tcp,
+                                                    'HTTP/1.1',keepalive,<<>>,
+                                                    [{#Ref<0.0.1.2864>,
+                                                      <<"GET">>,true},
+                                                     {#Ref<0.0.1.2865>,
+                                                      <<"GET">>,true},
+                                                     {#Ref<0.0.1.2866>,
+                                                      <<"GET">>,true}],
+                                                    head,undefined,head} (Timestamp: {1472,
+                                                                                      559223,
+                                                                                      882065})
+2> (<0.224.0>) returned from gun_http:request/7 -> {http_state,<0.183.0>,
+                                                 #Port<0.49409>,ranch_tcp,
+                                                 'HTTP/1.1',keepalive,<<>>,
+                                                 [{#Ref<0.0.1.2864>,<<"GET">>,
+                                                   true},
+                                                  {#Ref<0.0.1.2865>,<<"GET">>,
+                                                   true},
+                                                  {#Ref<0.0.1.2866>,<<"GET">>,
+                                                   true}],
+                                                 head,undefined,head} (Timestamp: {1472,
+                                                                                   559223,
+                                                                                   882066})
+2> (<0.224.0>) returning to gun:loop/1 (Timestamp: {1472,559223,882067})
+2> (<0.224.0>) call gun:loop/1 (Timestamp: {1472,559223,882068})
+2> (<0.224.0>) out {code_server,call,1} (Timestamp: {1472,559223,882069})
+2> (<0.224.0>) in {code_server,call,1} (Timestamp: {1472,559223,882070})
+2> (<0.224.0>) out {gun,loop,1} (Timestamp: {1472,559223,882071})
+2> (<0.224.0>) << {tcp,#Port<0.49409>,
+                    <<72,84,84,80,47,49,46,49,32,50,48,48,32,79,75,13,10,83,
+                      101,114,118,101,114,58,32,65,112,97,99,104,101,13,10,68,
+                      97,116,101,58,32,84,117,101,44,32,51,48,32,65,117,103,
+                      32,50,48,49,54,32,49,50,58,49,51,58,52,51,32,71,77,84,
+                      13,10,67,111,110,116,101,110,116,45,84,121,112,101,58,
+                      32,97,112,112,108,105,99,97,116,105,111,110,47,106,115,
+                      111,110,59,32,99,104,97,114,115,101,116,61,117,116,102,
+                      45,56,13,10,67,111,110,116,101,110,116,45,76,101,110,
+                      103,116,104,58,32,55,53,13,10,67,111,110,110,101,99,116,
+                      105,111,110,58,32,107,101,101,112,45,97,108,105,118,101,
+                      13,10,88,45,80,111,119,101,114,101,100,45,66,121,58,32,
+                      80,72,80,47,51,46,52,51,51,54,13,10,83,101,116,45,67,
+                      111,111,107,105,101,58,32,114,101,109,105,120,108,97,
+                      110,103,61,48,59,32,101,120,112,105,114,101,115,61,87,
+                      101,100,44,32,51,48,32,65,117,103,32,50,48,49,55,32,48,
+                      53,58,48,48,58,53,54,32,71,77,84,59,32,112,97,116,104,
+                      61,47,59,32,100,111,109,97,105,110,61,46,118,107,46,99,
+                      111,109,13,10,80,114,97,103,109,97,58,32,110,111,45,99,
+                      97,99,104,101,13,10,67,97,99,104,101,45,99,111,110,116,
+                      114,111,108,58,32,110,111,45,115,116,111,114,101,13,10,
+                      13,10,123,34,114,101,115,112,111,110,115,101,34,58,91,
+                      123,34,117,105,100,34,58,49,44,34,102,105,114,115,116,
+                      95,110,97,109,101,34,58,34,208,159,208,176,208,178,208,
+                      181,208,187,34,44,34,108,97,115,116,95,110,97,109,101,
+                      34,58,34,208,148,209,131,209,128,208,190,208,178,34,125,
+                      93,125>>} (Timestamp: {1472,559223,960000})
+2> (<0.224.0>) in {gun,loop,1} (Timestamp: {1472,559223,960001})
+2> (<0.224.0>) call gun_http:handle/2 (Timestamp: {1472,559223,960002})
+2> (<0.224.0>) call gun_http:handle_head/2 (Timestamp: {1472,559223,960003})
+2> (<0.224.0>) gc_minor_start [{wordsize,11},
+ {old_heap_block_size,987},
+ {heap_block_size,1598},
+ {mbuf_size,60},
+ {recent_size,30},
+ {stack_size,55},
+ {old_heap_size,119},
+ {heap_size,1537},
+ {bin_vheap_size,98},
+ {bin_vheap_block_size,46422},
+ {bin_old_vheap_size,0},
+ {bin_old_vheap_block_size,46422}] (Timestamp: {1472,559223,960004})
+2> (<0.224.0>) gc_minor_end [{wordsize,1684},
+ {old_heap_block_size,987},
+ {heap_block_size,2586},
+ {mbuf_size,0},
+ {recent_size,120},
+ {stack_size,55},
+ {old_heap_size,122},
+ {heap_size,180},
+ {bin_vheap_size,52},
+ {bin_vheap_block_size,46422},
+ {bin_old_vheap_size,0},
+ {bin_old_vheap_block_size,46422}] (Timestamp: {1472,559223,960005})
+2> (<0.224.0>) call gun_http:response_io_from_headers/4 (Timestamp: {1472,559223,
+                                                                  960006})
+2> (<0.224.0>) code_server ! {code_call,<0.224.0>,{ensure_loaded,cow_http_hd}} (Timestamp: {1472,
+                                                                                         559223,
+                                                                                         960007})
+2> (<0.224.0>) out {code_server,call,1} (Timestamp: {1472,559223,960008})
+2> (<0.224.0>) << {code_server,{module,cow_http_hd}} (Timestamp: {1472,559223,
+                                                               960009})
+2> (<0.224.0>) in {code_server,call,1} (Timestamp: {1472,559223,960010})
+2> (<0.224.0>) returned from gun_http:response_io_from_headers/4 -> {body,75} (Timestamp: {1472,
+                                                                                        559223,
+                                                                                        960011})
+2> (<0.224.0>) returning to gun_http:handle_head/2 (Timestamp: {1472,559223,
+                                                             960012})
+2> (<0.224.0>) <0.183.0> ! {gun_response,<0.224.0>,#Ref<0.0.1.2864>,nofin,200,
+                                      [{<<"server">>,<<"Apache">>},
+                                       {<<"date">>,
+                                        <<"Tue, 30 Aug 2016 12:13:43 GMT">>},
+                                       {<<"content-type">>,
+                                        <<"application/json; charset=utf-8">>},
+                                       {<<"content-length">>,<<"75">>},
+                                       {<<"connection">>,<<"keep-alive">>},
+                                       {<<"x-powered-by">>,<<"PHP/3.4336">>},
+                                       {<<"set-cookie">>,
+                                        <<"remixlang=0; expires=Wed, 30 Aug 2017 05:00:56 GMT; path=/; domain=.vk.com">>},
+                                       {<<"pragma">>,<<"no-cache">>},
+                                       {<<"cache-control">>,<<"no-store">>}]} (Timestamp: {1472,
+                                                                                           559223,
+                                                                                           960013})
+2> (<0.224.0>) call gun_http:conn_from_headers/2 (Timestamp: {1472,559223,960014})
+2> (<0.224.0>) returned from gun_http:conn_from_headers/2 -> keepalive (Timestamp: {1472,
+                                                                                 559223,
+                                                                                 960015})
+2> (<0.224.0>) returning to gun_http:handle_head/2 (Timestamp: {1472,559223,
+                                                             960016})
+2> (<0.224.0>) call gun_http:handle/2 (Timestamp: {1472,559223,960017})
+2> (<0.224.0>) call gun_http:send_data_if_alive/3 (Timestamp: {1472,559223,
+                                                            960018})
+2> (<0.224.0>) <0.183.0> ! {gun_data,<0.224.0>,#Ref<0.0.1.2864>,fin,
+                                  <<123,34,114,101,115,112,111,110,115,101,34,
+                                    58,91,123,34,117,105,100,34,58,49,44,34,
+                                    102,105,114,115,116,95,110,97,109,101,34,
+                                    58,34,208,159,208,176,208,178,208,181,208,
+                                    187,34,44,34,108,97,115,116,95,110,97,109,
+                                    101,34,58,34,208,148,209,131,209,128,208,
+                                    190,208,178,34,125,93,125>>} (Timestamp: {1472,
+                                                                              559223,
+                                                                              960019})
+2> (<0.224.0>) returned from gun_http:send_data_if_alive/3 -> ok (Timestamp: {1472,
+                                                                           559223,
+                                                                           960020})
+2> (<0.224.0>) returning to gun_http:handle/2 (Timestamp: {1472,559223,960021})
+2> (<0.224.0>) call gun_http:end_stream/1 (Timestamp: {1472,559223,960022})
+2> (<0.224.0>) returned from gun_http:end_stream/1 -> {http_state,<0.183.0>,
+                                                    #Port<0.49409>,ranch_tcp,
+                                                    'HTTP/1.1',keepalive,<<>>,
+                                                    [{#Ref<0.0.1.2865>,
+                                                      <<"GET">>,true},
+                                                     {#Ref<0.0.1.2866>,
+                                                      <<"GET">>,true}],
+                                                    head,
+                                                    {0,0},
+                                                    head} (Timestamp: {1472,
+                                                                       559223,
+                                                                       960023})
+2> (<0.224.0>) returned from gun_http:handle/2 -> {http_state,<0.183.0>,
+                                                #Port<0.49409>,ranch_tcp,
+                                                'HTTP/1.1',keepalive,<<>>,
+                                                [{#Ref<0.0.1.2865>,<<"GET">>,
+                                                  true},
+                                                 {#Ref<0.0.1.2866>,<<"GET">>,
+                                                  true}],
+                                                head,
+                                                {0,0},
+                                                head} (Timestamp: {1472,
+                                                                   559223,
+                                                                   960024})
+2> (<0.224.0>) returned from gun_http:handle_head/2 -> {http_state,<0.183.0>,
+                                                     #Port<0.49409>,ranch_tcp,
+                                                     'HTTP/1.1',keepalive,
+                                                     <<>>,
+                                                     [{#Ref<0.0.1.2865>,
+                                                       <<"GET">>,true},
+                                                      {#Ref<0.0.1.2866>,
+                                                       <<"GET">>,true}],
+                                                     head,
+                                                     {0,0},
+                                                     head} (Timestamp: {1472,
+                                                                        559223,
+                                                                        960025})
+2> (<0.224.0>) returned from gun_http:handle/2 -> {http_state,<0.183.0>,
+                                                #Port<0.49409>,ranch_tcp,
+                                                'HTTP/1.1',keepalive,<<>>,
+                                                [{#Ref<0.0.1.2865>,<<"GET">>,
+                                                  true},
+                                                 {#Ref<0.0.1.2866>,<<"GET">>,
+                                                  true}],
+                                                head,
+                                                {0,0},
+                                                head} (Timestamp: {1472,
+                                                                   559223,
+                                                                   960026})
+2> (<0.224.0>) returning to gun:loop/1 (Timestamp: {1472,559223,960027})
+2> (<0.224.0>) call gun:loop/1 (Timestamp: {1472,559223,960028})
+2> (<0.224.0>) out {code_server,call,1} (Timestamp: {1472,559223,960029})
+2> (<0.224.0>) in {code_server,call,1} (Timestamp: {1472,559223,960030})
+2> (<0.224.0>) out {gun,loop,1} (Timestamp: {1472,559223,960031})
+2> (<0.224.0>) << {tcp,#Port<0.49409>,
+                    <<"HTTP/1.1 200 OK\r\nServer: Apache\r\nDate: Tue, 30 Aug 2016 12:13:44 GMT\r\nContent-Type: application/json; charset=u
+tf-8\r\nContent-Length: 91\r\nConnection: keep-alive\r\nX-Powered-By: PHP/3.4336\r\nSet-Cookie: remixlang=0; expires=Sun, 10 Sep 2017 01:58:
+55 GMT; path=/; domain=.vk.com\r\nPragma: no-cache\r\nCache-control: no-store\r\n\r\n{\"response\":[{\"uid\":51,\"first_name\":\"Anna\",\"la
+st_name\":\"Linehan\",\"deactivated\":\"deleted\"}]}">>} (Timestamp: {1472,
+
+
+
+                                                                      559223,
+
+
+
+                                                                      991000})
+2> (<0.224.0>) in {gun,loop,1} (Timestamp: {1472,559223,991001})
+2> (<0.224.0>) call gun_http:handle/2 (Timestamp: {1472,559223,991002})
+2> (<0.224.0>) call gun_http:handle_head/2 (Timestamp: {1472,559223,991003})
+2> (<0.224.0>) gc_minor_start [{wordsize,5},
+ {old_heap_block_size,987},
+ {heap_block_size,2586},
+ {mbuf_size,60},
+ {recent_size,120},
+ {stack_size,58},
+ {old_heap_size,122},
+ {heap_size,2527},
+ {bin_vheap_size,154},
+ {bin_vheap_block_size,46422},
+ {bin_old_vheap_size,0},
+ {bin_old_vheap_block_size,46422}] (Timestamp: {1472,559223,991004})
+2> (<0.224.0>) gc_minor_end [{wordsize,2655},
+ {old_heap_block_size,987},
+ {heap_block_size,610},
+ {mbuf_size,0},
+ {recent_size,124},
+ {stack_size,58},
+ {old_heap_size,134},
+ {heap_size,184},
+ {bin_vheap_size,56},
+ {bin_vheap_block_size,46422},
+ {bin_old_vheap_size,0},
+ {bin_old_vheap_block_size,46422}] (Timestamp: {1472,559223,991005})
+2> (<0.224.0>) gc_minor_start [{wordsize,5},
+ {old_heap_block_size,987},
+ {heap_block_size,610},
+ {mbuf_size,60},
+ {recent_size,124},
+ {stack_size,58},
+ {old_heap_size,134},
+ {heap_size,548},
+ {bin_vheap_size,56},
+ {bin_vheap_block_size,46422},
+ {bin_old_vheap_size,0},
+ {bin_old_vheap_block_size,46422}] (Timestamp: {1472,559223,991006})
+2> (<0.224.0>) gc_minor_end [{wordsize,639},
+ {old_heap_block_size,987},
+ {heap_block_size,987},
+ {mbuf_size,0},
+ {recent_size,66},
+ {stack_size,58},
+ {old_heap_size,247},
+ {heap_size,126},
+ {bin_vheap_size,3},
+ {bin_vheap_block_size,46422},
+ {bin_old_vheap_size,58},
+ {bin_old_vheap_block_size,46422}] (Timestamp: {1472,559223,991007})
+2> (<0.224.0>) gc_minor_start [{wordsize,6},
+ {old_heap_block_size,987},
+ {heap_block_size,987},
+ {mbuf_size,60},
+ {recent_size,66},
+ {stack_size,58},
+ {old_heap_size,247},
+ {heap_size,926},
+ {bin_vheap_size,3},
+ {bin_vheap_block_size,46422},
+ {bin_old_vheap_size,58},
+ {bin_old_vheap_block_size,46422}] (Timestamp: {1472,559223,991008})
+2> (<0.224.0>) gc_minor_end [{wordsize,1029},
+ {old_heap_block_size,987},
+ {heap_block_size,1598},
+ {mbuf_size,0},
+ {recent_size,102},
+ {stack_size,58},
+ {old_heap_size,306},
+ {heap_size,162},
+ {bin_vheap_size,14},
+ {bin_vheap_block_size,46422},
+ {bin_old_vheap_size,61},
+ {bin_old_vheap_block_size,46422}] (Timestamp: {1472,559223,991009})
+2> (<0.224.0>) call gun_http:response_io_from_headers/4 (Timestamp: {1472,559223,
+                                                                  991010})
+2> (<0.224.0>) returned from gun_http:response_io_from_headers/4 -> {body,91} (Timestamp: {1472,
+                                                                                        559223,
+                                                                                        991011})
+2> (<0.224.0>) returning to gun_http:handle_head/2 (Timestamp: {1472,559223,
+                                                             991012})
+2> (<0.224.0>) <0.183.0> ! {gun_response,<0.224.0>,#Ref<0.0.1.2865>,nofin,200,
+                                      [{<<"server">>,<<"Apache">>},
+                                       {<<"date">>,
+                                        <<"Tue, 30 Aug 2016 12:13:44 GMT">>},
+                                       {<<"content-type">>,
+                                        <<"application/json; charset=utf-8">>},
+                                       {<<"content-length">>,<<"91">>},
+                                       {<<"connection">>,<<"keep-alive">>},
+                                       {<<"x-powered-by">>,<<"PHP/3.4336">>},
+                                       {<<"set-cookie">>,
+                                        <<"remixlang=0; expires=Sun, 10 Sep 2017 01:58:55 GMT; path=/; domain=.vk.com">>},
+                                       {<<"pragma">>,<<"no-cache">>},
+                                       {<<"cache-control">>,<<"no-store">>}]} (Timestamp: {1472,
+                                                                                           559223,
+                                                                                           991013})
+2> (<0.224.0>) call gun_http:conn_from_headers/2 (Timestamp: {1472,559223,991014})
+2> (<0.224.0>) returned from gun_http:conn_from_headers/2 -> keepalive (Timestamp: {1472,
+                                                                                 559223,
+                                                                                 991015})
+2> (<0.224.0>) returning to gun_http:handle_head/2 (Timestamp: {1472,559223,
+                                                             991016})
+2> (<0.224.0>) call gun_http:handle/2 (Timestamp: {1472,559223,991017})
+2> (<0.224.0>) call gun_http:send_data_if_alive/3 (Timestamp: {1472,559223,
+                                                            991018})
+2> (<0.224.0>) <0.183.0> ! {gun_data,<0.224.0>,#Ref<0.0.1.2865>,fin,
+                                  <<"{\"response\":[{\"uid\":51,\"first_name\":\"Anna\",\"last_name\":\"Linehan\",\"deactivated\":\"deleted\
+"}]}">>} (Timestamp: {1472,
+
+                      559223,
+
+                      991019})
+2> (<0.224.0>) returned from gun_http:send_data_if_alive/3 -> ok (Timestamp: {1472,
+                                                                           559223,
+                                                                           991020})
+2> (<0.224.0>) returning to gun_http:handle/2 (Timestamp: {1472,559223,991021})
+2> (<0.224.0>) call gun_http:end_stream/1 (Timestamp: {1472,559223,991022})
+2> (<0.224.0>) returned from gun_http:end_stream/1 -> {http_state,<0.183.0>,
+                                                    #Port<0.49409>,ranch_tcp,
+                                                    'HTTP/1.1',keepalive,<<>>,
+                                                    [{#Ref<0.0.1.2866>,
+                                                      <<"GET">>,true}],
+                                                    head,
+                                                    {0,0},
+                                                    head} (Timestamp: {1472,
+                                                                       559223,
+                                                                       991023})
+2> (<0.224.0>) returned from gun_http:handle/2 -> {http_state,<0.183.0>,
+                                                #Port<0.49409>,ranch_tcp,
+                                                'HTTP/1.1',keepalive,<<>>,
+                                                [{#Ref<0.0.1.2866>,<<"GET">>,
+                                                  true}],
+                                                head,
+                                                {0,0},
+                                                head} (Timestamp: {1472,
+                                                                   559223,
+                                                                   991024})
+2> (<0.224.0>) returned from gun_http:handle_head/2 -> {http_state,<0.183.0>,
+                                                     #Port<0.49409>,ranch_tcp,
+                                                     'HTTP/1.1',keepalive,
+                                                     <<>>,
+                                                     [{#Ref<0.0.1.2866>,
+                                                       <<"GET">>,true}],
+                                                     head,
+                                                     {0,0},
+                                                     head} (Timestamp: {1472,
+                                                                        559223,
+                                                                        991025})
+2> (<0.224.0>) returned from gun_http:handle/2 -> {http_state,<0.183.0>,
+                                                #Port<0.49409>,ranch_tcp,
+                                                'HTTP/1.1',keepalive,<<>>,
+                                                [{#Ref<0.0.1.2866>,<<"GET">>,
+                                                  true}],
+                                                head,
+                                                {0,0},
+                                                head} (Timestamp: {1472,
+                                                                   559223,
+                                                                   991026})
+2> (<0.224.0>) returning to gun:loop/1 (Timestamp: {1472,559223,991027})
+2> (<0.224.0>) call gun:loop/1 (Timestamp: {1472,559223,991028})
+2> (<0.224.0>) out {gun,loop,1} (Timestamp: {1472,559223,991029})
+2> (<0.224.0>) in {gun,loop,1} (Timestamp: {1472,559223,991030})
+2> (<0.224.0>) out {gun,loop,1} (Timestamp: {1472,559223,991031})
+2> (<0.224.0>) << {tcp,#Port<0.49409>,
+                    <<72,84,84,80,47,49,46,49,32,50,48,48,32,79,75,13,10,83,
+                      101,114,118,101,114,58,32,65,112,97,99,104,101,13,10,68,
+                      97,116,101,58,32,84,117,101,44,32,51,48,32,65,117,103,
+                      32,50,48,49,54,32,49,50,58,49,51,58,52,52,32,71,77,84,
+                      13,10,67,111,110,116,101,110,116,45,84,121,112,101,58,
+                      32,97,112,112,108,105,99,97,116,105,111,110,47,106,115,
+                      111,110,59,32,99,104,97,114,115,101,116,61,117,116,102,
+                      45,56,13,10,67,111,110,116,101,110,116,45,76,101,110,
+                      103,116,104,58,32,57,52,13,10,67,111,110,110,101,99,116,
+                      105,111,110,58,32,107,101,101,112,45,97,108,105,118,101,
+                      13,10,88,45,80,111,119,101,114,101,100,45,66,121,58,32,
+                      80,72,80,47,51,46,52,51,51,54,13,10,83,101,116,45,67,
+                      111,111,107,105,101,58,32,114,101,109,105,120,108,97,
+                      110,103,61,48,59,32,101,120,112,105,114,101,115,61,84,
+                      117,101,44,32,50,50,32,65,117,103,32,50,48,49,55,32,50,
+                      48,58,52,55,58,49,50,32,71,77,84,59,32,112,97,116,104,
+                      61,47,59,32,100,111,109,97,105,110,61,46,118,107,46,99,
+                      111,109,13,10,80,114,97,103,109,97,58,32,110,111,45,99,
+                      97,99,104,101,13,10,67,97,99,104,101,45,99,111,110,116,
+                      114,111,108,58,32,110,111,45,115,116,111,114,101,13,10,
+                      13,10,123,34,114,101,115,112,111,110,115,101,34,58,91,
+                      123,34,117,105,100,34,58,49,48,53,50,54,54,50,44,34,102,
+                      105,114,115,116,95,110,97,109,101,34,58,34,208,160,208,
+                      190,208,188,208,176,208,189,34,44,34,108,97,115,116,95,
+                      110,97,109,101,34,58,34,208,161,209,131,209,129,208,187,
+                      208,184,208,189,34,44,34,104,105,100,100,101,110,34,58,
+                      49,125,93,125>>} (Timestamp: {1472,559224,7000})
+2> (<0.224.0>) in {gun,loop,1} (Timestamp: {1472,559224,7001})
+2> (<0.224.0>) call gun_http:handle/2 (Timestamp: {1472,559224,7002})
+2> (<0.224.0>) call gun_http:handle_head/2 (Timestamp: {1472,559224,7003})
+2> (<0.224.0>) gc_minor_start [{wordsize,6},
+ {old_heap_block_size,987},
+ {heap_block_size,1598},
+ {mbuf_size,60},
+ {recent_size,102},
+ {stack_size,61},
+ {old_heap_size,306},
+ {heap_size,1532},
+ {bin_vheap_size,116},
+ {bin_vheap_block_size,46422},
+ {bin_old_vheap_size,61},
+ {bin_old_vheap_block_size,46422}] (Timestamp: {1472,559224,7004})
+2> (<0.224.0>) gc_minor_end [{wordsize,1620},
+ {old_heap_block_size,987},
+ {heap_block_size,2586},
+ {mbuf_size,0},
+ {recent_size,182},
+ {stack_size,61},
+ {old_heap_size,306},
+ {heap_size,242},
+ {bin_vheap_size,61},
+ {bin_vheap_block_size,46422},
+ {bin_old_vheap_size,61},
+ {bin_old_vheap_block_size,46422}] (Timestamp: {1472,559224,7005})
+2> (<0.224.0>) call gun_http:response_io_from_headers/4 (Timestamp: {1472,559224,
+                                                                  7006})
+2> (<0.224.0>) returned from gun_http:response_io_from_headers/4 -> {body,94} (Timestamp: {1472,
+                                                                                        559224,
+                                                                                        7007})
+2> (<0.224.0>) returning to gun_http:handle_head/2 (Timestamp: {1472,559224,7008})
+2> (<0.224.0>) <0.183.0> ! {gun_response,<0.224.0>,#Ref<0.0.1.2866>,nofin,200,
+                                      [{<<"server">>,<<"Apache">>},
+                                       {<<"date">>,
+                                        <<"Tue, 30 Aug 2016 12:13:44 GMT">>},
+                                       {<<"content-type">>,
+                                        <<"application/json; charset=utf-8">>},
+                                       {<<"content-length">>,<<"94">>},
+                                       {<<"connection">>,<<"keep-alive">>},
+                                       {<<"x-powered-by">>,<<"PHP/3.4336">>},
+                                       {<<"set-cookie">>,
+                                        <<"remixlang=0; expires=Tue, 22 Aug 2017 20:47:12 GMT; path=/; domain=.vk.com">>},
+                                       {<<"pragma">>,<<"no-cache">>},
+                                       {<<"cache-control">>,<<"no-store">>}]} (Timestamp: {1472,
+                                                                                           559224,
+                                                                                           7009})
+2> (<0.224.0>) call gun_http:conn_from_headers/2 (Timestamp: {1472,559224,7010})
+2> (<0.224.0>) returned from gun_http:conn_from_headers/2 -> keepalive (Timestamp: {1472,
+                                                                                 559224,
+                                                                                 7011})
+2> (<0.224.0>) returning to gun_http:handle_head/2 (Timestamp: {1472,559224,7012})
+2> (<0.224.0>) call gun_http:handle/2 (Timestamp: {1472,559224,7013})
+2> (<0.224.0>) call gun_http:send_data_if_alive/3 (Timestamp: {1472,559224,7014})
+2> (<0.224.0>) <0.183.0> ! {gun_data,<0.224.0>,#Ref<0.0.1.2866>,fin,
+                                  <<123,34,114,101,115,112,111,110,115,101,34,
+                                    58,91,123,34,117,105,100,34,58,49,48,53,
+                                    50,54,54,50,44,34,102,105,114,115,116,95,
+                                    110,97,109,101,34,58,34,208,160,208,190,
+                                    208,188,208,176,208,189,34,44,34,108,97,
+                                    115,116,95,110,97,109,101,34,58,34,208,
+                                    161,209,131,209,129,208,187,208,184,208,
+                                    189,34,44,34,104,105,100,100,101,110,34,
+                                    58,49,125,93,125>>} (Timestamp: {1472,
+                                                                     559224,
+                                                                     7015})
+2> (<0.224.0>) returned from gun_http:send_data_if_alive/3 -> ok (Timestamp: {1472,
+                                                                           559224,
+                                                                           7016})
+2> (<0.224.0>) returning to gun_http:handle/2 (Timestamp: {1472,559224,7017})
+2> (<0.224.0>) call gun_http:end_stream/1 (Timestamp: {1472,559224,7018})
+2> (<0.224.0>) returned from gun_http:end_stream/1 -> {http_state,<0.183.0>,
+                                                    #Port<0.49409>,ranch_tcp,
+                                                    'HTTP/1.1',keepalive,<<>>,
+                                                    [],head,
+                                                    {0,0},
+                                                    head} (Timestamp: {1472,
+                                                                       559224,
+                                                                       7019})
+2> (<0.224.0>) returned from gun_http:handle/2 -> {http_state,<0.183.0>,
+                                                #Port<0.49409>,ranch_tcp,
+                                                'HTTP/1.1',keepalive,<<>>,[],
+                                                head,
+                                                {0,0},
+                                                head} (Timestamp: {1472,
+                                                                   559224,
+                                                                   7020})
+2> (<0.224.0>) returned from gun_http:handle_head/2 -> {http_state,<0.183.0>,
+                                                     #Port<0.49409>,ranch_tcp,
+                                                     'HTTP/1.1',keepalive,
+                                                     <<>>,[],head,
+                                                     {0,0},
+                                                     head} (Timestamp: {1472,
+                                                                        559224,
+                                                                        7021})
+2> (<0.224.0>) returned from gun_http:handle/2 -> {http_state,<0.183.0>,
+                                                #Port<0.49409>,ranch_tcp,
+                                                'HTTP/1.1',keepalive,<<>>,[],
+                                                head,
+                                                {0,0},
+                                                head} (Timestamp: {1472,
+                                                                   559224,
+                                                                   7022})
+2> (<0.224.0>) returning to gun:loop/1 (Timestamp: {1472,559224,7023})
+2> (<0.224.0>) call gun:loop/1 (Timestamp: {1472,559224,7024})
+2> (<0.224.0>) out {gun,loop,1} (Timestamp: {1472,559224,7025})
+2> (<0.224.0>) in {gun,loop,1} (Timestamp: {1472,559224,7026})
+2> (<0.224.0>) out {gun,loop,1} (Timestamp: {1472,559224,7027})
+2> ^CЗавершить выполнение пакетного файла [Y(да)/N(нет)]?
+^C
+X:\work\snitch\likes-crawler\app>
