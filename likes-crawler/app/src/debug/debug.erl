@@ -10,7 +10,11 @@
 start() ->
   application:ensure_all_started(gun),
   application:ensure_all_started(lager),
+  application:ensure_all_started(gproc),
   %lager:set_loglevel(lager_console_backend, debug),
 
-  connection_server:start_link().
+  [
+    worker_supervisor:start_link(N) ||
+    N <- lists:seq(1, 500)
+  ].
 

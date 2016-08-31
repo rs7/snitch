@@ -15,24 +15,24 @@ open() -> gun:open("api.vk.com", 80, #{
   http_opts => #{keepalive => ?DISABLE_KEEPALIVE}
 }).
 
-close(Connection) -> gun:shutdown(Connection).
+close(GunConnectionPid) -> gun:shutdown(GunConnectionPid).
 
-request(Connection, Request) ->
-  request(Connection, Request, get).
+request(GunConnectionPid, Request) ->
+  request(GunConnectionPid, Request, get).
 
 %%%===================================================================
 %%% internal
 %%%===================================================================
 
-request(Connection, {Method, Params}, get) ->
+request(GunConnectionPid, {Method, Params}, get) ->
   gun:get(
-    Connection,
+    GunConnectionPid,
     request_lib:path_with_query(Method, Params)
   );
 
-request(Connection, {Method, Params}, post) ->
+request(GunConnectionPid, {Method, Params}, post) ->
   gun:post(
-    Connection,
+    GunConnectionPid,
     request_lib:path(Method),
     [{<<"Content-Type">>, <<"application/x-www-form-urlencoded">>}],
     request_lib:query(Params)
