@@ -23,13 +23,13 @@ init(Id) ->
 
   Specifications = [
     #{
-      id => requester,
-      start => {requester_server, start_link, [Id]},
+      id => connection,
+      start => {connection_server, start_link, [Id]},
       type => worker
     },
     #{
-      id => connection,
-      start => {connection_server, start_link, [Id]},
+      id => requester,
+      start => {requester_server, start_link, [Id]},
       type => worker
     }
   ],

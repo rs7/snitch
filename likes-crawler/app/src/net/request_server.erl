@@ -3,7 +3,7 @@
 -behaviour(gen_server).
 
 %%% api
--export([start_link/2, set_status/2, add_data/2, fin/1]).
+-export([start_link/3, status/2, data/2, fin/1, error/1]).
 
 %%% behaviour
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -13,31 +13,36 @@
   connection_pid,
   status,
   data,
-  response
+  request_data,
+  retry_count
 }).
 
 %%%===================================================================
 %%% api
 %%%===================================================================
 
-start_link(RequesterPid, ConnectionPid) ->
-  gen_server:start_link(?MODULE, [RequesterPid, ConnectionPid], []).
+start_link(RequesterPid, ConnectionPid, RequestData) ->
+  gen_server:start_link(?MODULE, [RequesterPid, ConnectionPid, RequestData], []).
 
-set_status(RequestPid, Status) -> gen_server:cast(RequestPid, {status, Status}).
+status(RequestPid, Status) -> gen_server:cast(RequestPid, {status, Status}).
 
-add_data(RequestPid, Data) -> gen_server:cast(RequestPid, {data, Data}).
+data(RequestPid, Data) -> gen_server:cast(RequestPid, {data, Data}).
 
 fin(RequestPid) -> gen_server:cast(RequestPid, fin).
+
+error(RequestPid) -> gen_server:cast(RequestPid, error).
 
 %%%===================================================================
 %%% behaviour
 %%%===================================================================
 
-init([RequesterPid, ConnectionPid]) ->
+init([RequesterPid, ConnectionPid, RequestData]) ->
   self() ! start,
   {ok, #state{
     requester_pid = RequesterPid,
-    connection_pid = ConnectionPid
+    connection_pid = ConnectionPid,
+    request_data = RequestData,
+    retry_count = 0
   }}.
 
 handle_call(_Request, _From, State) -> {reply, ok, State}.
@@ -50,30 +55,59 @@ handle_cast({status, Status}, State) ->
   NewState = State#state{status = Status},
   {noreply, NewState};
 
-handle_cast({data, Data}, #state{status = 200, data = Acc} = State) ->
-  NewState = State#state{data = <<Acc/binary, Data/binary>>},
+handle_cast({data, Data}, #state{status = 200, data = Accumulator} = State) ->
+  NewState = State#state{data = <<Accumulator/binary, Data/binary>>},
   {noreply, NewState};
 
 handle_cast({data, _Data}, #state{status = _Status} = State) ->
   {noreply, State};
 
-handle_cast(fin, #state{status = 200, data = Data} = State) ->
-  Response = response_lib:decode_body(Data),
-  %lager:debug("response ~p", [Response]),
-  NewState = State#state{response = Response},
-  {stop, normal, NewState};
+handle_cast(fin, #state{status = 200, data = Data, requester_pid = RequesterPid} = State) ->
+  Next = case response_lib:decode_body(Data) of
+    {ok, {response, Response}} -> {result, {response, Response}};
+
+    {ok, {error, 10}} -> retry;
+
+    {ok, {error, 1}} -> retry;
+
+    {ok, {error, ErrorCode}} -> {result, {error, ErrorCode}};
+
+    {error, _Reason} -> retry
+  end,
+
+  case Next of
+    {result, Result} ->
+      requester_server:result(RequesterPid, Result),
+      {stop, normal, State};
+
+    retry ->
+      self() ! start,
+      {noreply, State}
+  end;
 
 handle_cast(fin, #state{status = _Status} = State) ->
-  {stop, normal, State};
+  self() ! start,
+  {noreply, State};
+
+handle_cast(error, State) ->
+  self() ! start,
+  {noreply, State};
 
 handle_cast(_Request, State) -> {noreply, State}.
 
-handle_info(start,
-  #state{requester_pid = RequesterPid, connection_pid = ConnectionPid} = State
+handle_info(
+  start,
+  #state{connection_pid = ConnectionPid, request_data = RequestData, retry_count = RetryCount} = State
 ) ->
-  RequestData = requester_server:get_request_data(RequesterPid),
   connection_server:register_request(ConnectionPid, RequestData, self()),
-  {noreply, State};
+
+  NewState = State#state{
+    status = undefined,
+    data = undefined,
+    retry_count = RetryCount + 1
+  },
+
+  {noreply, NewState};
 
 handle_info(_Info, State) -> {noreply, State}.
 
