@@ -10,11 +10,13 @@
 start(WorkerCount) ->
   application:ensure_all_started(gun),
   application:ensure_all_started(lager),
-  application:ensure_all_started(gproc),
-  %lager:set_loglevel(lager_console_backend, debug),
+
+  request_counter:start_link(),
+
+  lager:set_loglevel(lager_console_backend, info),
 
   [
-    worker_supervisor:start_link(Id) ||
-    Id <- lists:seq(1, WorkerCount)
+    worker_supervisor:start_link() ||
+    _ <- lists:seq(1, WorkerCount)
   ].
 
