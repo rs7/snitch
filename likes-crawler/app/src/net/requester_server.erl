@@ -8,12 +8,15 @@
 %%% behaviour
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
--define(STAT_TIMEOUT, 10 * 1000).
+-define(PUT_STAT_TIMEOUT, 10 * 1000).
 
 -record(state, {
-  reserve_count,
-  release_count,
-  retry_count
+  heap,
+  reserved,
+  wait_heap,
+  stat_reserve_count,
+  stat_release_count,
+  stat_retry_count
 }).
 
 %%%===================================================================
@@ -22,7 +25,7 @@
 
 start_link() -> gen_server:start_link(?MODULE, [], []).
 
-reserve(RequesterPid, Count) -> gen_server:call(RequesterPid, {reserve, Count}).
+reserve(RequesterPid, Count) -> gen_server:call(RequesterPid, {reserve, Count}, infinity).
 
 release(RequesterPid, RequestRef, Result) -> gen_server:cast(RequesterPid, {release, RequestRef, Result}).
 
@@ -31,40 +34,111 @@ release(RequesterPid, RequestRef, Result) -> gen_server:cast(RequesterPid, {rele
 %%%===================================================================
 
 init([]) ->
-  erlang:send_after(?STAT_TIMEOUT, self(), save_stat),
+  erlang:send_after(?PUT_STAT_TIMEOUT, self(), put_stat),
 
   {ok, #state{
-    reserve_count = 0,
-    release_count = 0,
-    retry_count = 0
+    heap = get_requests(1000),
+    reserved = #{},
+    wait_heap = [],
+    stat_reserve_count = 0,
+    stat_release_count = 0,
+    stat_retry_count = 0
   }}.
 
-handle_call({reserve, Count}, _From, #state{reserve_count = ReserveCount} = State) ->
-  Reply = [create_request() || _ <- lists:seq(1, Count)],
+%%%===================================================================
+%%% reserve
+%%%===================================================================
 
-  {reply, {ok, Reply}, State#state{reserve_count = ReserveCount + Count}};
+handle_call(
+  {reserve, Count}, _From,
+  #state{heap = Heap, reserved = Reserved, stat_reserve_count = StatReserveCount} = State
+) when length(Heap) >= Count ->
+  {RequestInfos, NewHeap} = lists:split(Count, Heap),
+
+  NewReserved = maps:merge(Reserved, maps:from_list(RequestInfos)),
+  NewState = State#state{
+    heap = NewHeap,
+    reserved = NewReserved,
+    stat_reserve_count = StatReserveCount + Count
+  },
+  Reply = {ok, RequestInfos},
+  {reply, Reply, NewState};
+
+handle_call(
+  {reserve, Count}, From,
+  #state{heap = Heap, wait_heap = WaitHeap} = State
+) when length(Heap) < Count ->
+  lager:warning("heap wait ~p ~p", [From, Count]),
+
+  NewWaitHeap = [{From, Count} | WaitHeap],
+  NewState = State#state{
+    heap = NewWaitHeap
+  },
+  {noreply, NewState};
+
+%%%===================================================================
 
 handle_call(_Request, _From, State) -> {reply, ok, State}.
 
-handle_cast({release, RequestRef, {result, Result}}, #state{release_count = ReleaseCount} = State) ->
-  {noreply, State#state{release_count = ReleaseCount + 1}};
+%%%===================================================================
+%%% result
+%%%===================================================================
 
 handle_cast(
-  {release, RequestRef, {retry, Release}},
-  #state{release_count = ReleaseCount, retry_count = RetryCount} = State
+  {release, RequestRef, {result, Result}},
+  #state{reserved = Reserved, stat_release_count = StatReleaseCount} = State
 ) ->
-  lager:warning("retry ~p", [Release]),
-  {noreply, State#state{release_count = ReleaseCount + 1, retry_count = RetryCount + 1}};
+  {RequestData, NewReserved} = maps:take(RequestRef, Reserved),
+  RequestInfo = {RequestRef, RequestData},
+
+  lager:debug("~p ~p", [RequestInfo, Result]),
+
+  NewState = State#state{
+    reserved = NewReserved,
+    stat_release_count = StatReleaseCount + 1
+  },
+  {noreply, NewState};
+
+%%%===================================================================
+%%% retry
+%%%===================================================================
+
+handle_cast(
+  {release, RequestRef, {retry, Reason}},
+  #state{heap = Heap, reserved = Reserved, stat_release_count = StatReleaseCount, stat_retry_count = StatRetryCount} =
+    State
+) ->
+  {RequestData, NewReserved} = maps:take(RequestRef, Reserved),
+  RequestInfo = {RequestRef, RequestData},
+
+  lager:warning("retry ~p ~p", [RequestInfo, Reason]),
+
+  NewHeap = [RequestInfo | Heap],
+  NewState = State#state{
+    heap = NewHeap,
+    reserved = NewReserved,
+    stat_release_count = StatReleaseCount + 1,
+    stat_retry_count = StatRetryCount + 1
+  },
+  {noreply, NewState};
+
+%%%===================================================================
 
 handle_cast(_Request, State) -> {noreply, State}.
 
 handle_info(
-  save_stat,
-  #state{reserve_count = ReserveCount, release_count = ReleaseCount, retry_count = RetryCount} = State
+  put_stat,
+  #state{stat_reserve_count = StatReserveCount, stat_release_count = StatReleaseCount, stat_retry_count = StatRetryCount} =
+    State
 ) ->
-  erlang:send_after(?STAT_TIMEOUT, self(), save_stat),
-  request_counter:append({ReserveCount, ReleaseCount, RetryCount}),
-  {noreply, State#state{release_count = 0, reserve_count = 0, retry_count = 0}};
+  erlang:send_after(?PUT_STAT_TIMEOUT, self(), put_stat),
+  request_counter:append({StatReserveCount, StatReleaseCount, StatRetryCount}),
+  NewState = State#state{
+    stat_release_count = 0,
+    stat_reserve_count = 0,
+    stat_retry_count = 0
+  },
+  {noreply, NewState};
 
 handle_info(_Info, State) -> {noreply, State}.
 
@@ -76,4 +150,6 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%% internal
 %%%===================================================================
 
-create_request() -> {make_ref(), mock:get_request_data()}.
+get_requests(Count) -> [get_request() || _ <- lists:seq(1, Count)].
+
+get_request() -> {make_ref(), mock:get_random_request_data()}.

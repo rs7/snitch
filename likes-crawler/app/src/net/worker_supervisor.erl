@@ -16,8 +16,8 @@ start_link() ->
   {ok, SupervisorPid} = supervisor:start_link(?MODULE, []),
 
   [
-    {requester, RequesterPid, _, _},
-    {connection, ConnectionPid, _, _}
+    {connection, ConnectionPid, _, _},
+    {requester, RequesterPid, _, _}
   ] = supervisor:which_children(SupervisorPid),
 
   connection_server:set_requester_pid(ConnectionPid, RequesterPid),
@@ -33,13 +33,13 @@ init([]) ->
 
   Specifications = [
     #{
-      id => connection,
-      start => {connection_server, start_link, []},
+      id => requester,
+      start => {requester_server, start_link, []},
       type => worker
     },
     #{
-      id => requester,
-      start => {requester_server, start_link, []},
+      id => connection,
+      start => {connection_server, start_link, []},
       type => worker
     }
   ],

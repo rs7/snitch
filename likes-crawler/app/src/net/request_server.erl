@@ -20,7 +20,7 @@
 %%% api
 %%%===================================================================
 
-start_link(RequesterPid, RequestInfo) -> gen_server:start_link(?MODULE, {RequesterPid, RequestInfo}, []).
+start_link(RequesterPid, RequestRef) -> gen_server:start_link(?MODULE, {RequesterPid, RequestRef}, []).
 
 status(RequestPid, Status) -> gen_server:cast(RequestPid, {status, Status}).
 
@@ -34,11 +34,10 @@ error(RequestPid, Reason) -> gen_server:cast(RequestPid, {error, Reason}).
 %%% behaviour
 %%%===================================================================
 
-init({RequesterPid, {RequestRef, RequestData}}) ->
+init({RequesterPid, RequestRef}) ->
   {ok, #state{
     requester_pid = RequesterPid,
-    request_ref = RequestRef,
-    request_data = RequestData
+    request_ref = RequestRef
   }}.
 
 handle_call(_Request, _From, State) -> {reply, ok, State}.

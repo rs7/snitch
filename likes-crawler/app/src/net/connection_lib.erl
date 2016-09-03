@@ -9,16 +9,16 @@
 %%% api
 %%%===================================================================
 
-open() -> gun:open("api.vk.com", 80, #{
-  retry => 3,
-  retry_timeout => 0,
-  http_opts => #{keepalive => ?DISABLE_KEEPALIVE}
-}).
+open() ->
+  gun:open("api.vk.com", 80, #{
+    retry => 3,
+    retry_timeout => 0,
+    http_opts => #{keepalive => ?DISABLE_KEEPALIVE}
+  }).
 
 close(GunConnectionPid) -> gun:shutdown(GunConnectionPid).
 
-request(GunConnectionPid, Request) ->
-  request(GunConnectionPid, Request, get).
+request(GunConnectionPid, Request) -> request(GunConnectionPid, Request, get).
 
 %%%===================================================================
 %%% internal
