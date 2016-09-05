@@ -17,10 +17,12 @@ start_link() ->
 
   [
     {connection, ConnectionPid, _, _},
-    {requester, RequesterPid, _, _}
+    {requester, RequesterPid, _, _},
+    {logic, LogicPid, _, _}
   ] = supervisor:which_children(SupervisorPid),
 
-  connection_server:set_requester_pid(ConnectionPid, RequesterPid),
+  ok = mock_logic_server:set_requester_pid(LogicPid, RequesterPid),
+  ok = connection_server:set_requester_pid(ConnectionPid, RequesterPid),
 
   {ok, SupervisorPid}.
 
@@ -32,6 +34,11 @@ init([]) ->
   Strategy = #{strategy => one_for_all, intensity => 0, period => 1},
 
   Specifications = [
+    #{
+      id => logic,
+      start => {mock_logic_server, start_link, []},
+      type => worker
+    },
     #{
       id => requester,
       start => {requester_server, start_link, []},

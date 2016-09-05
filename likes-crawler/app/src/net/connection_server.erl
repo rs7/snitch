@@ -23,7 +23,7 @@
 
 start_link() -> gen_server:start_link(?MODULE, [], []).
 
-set_requester_pid(ConnectionPid, RequesterPid) -> gen_server:cast(ConnectionPid, {set_requester_pid, RequesterPid}).
+set_requester_pid(ConnectionPid, RequesterPid) -> gen_server:call(ConnectionPid, {set_requester_pid, RequesterPid}).
 
 %%%===================================================================
 %%% behaviour
@@ -34,13 +34,11 @@ init([]) ->
     streams = #{}
   }}.
 
-handle_call(_Request, _From, State) -> {reply, ok, State}.
-
 %%%===================================================================
 %%% set_requester_pid
 %%%===================================================================
 
-handle_cast({set_requester_pid, RequesterPid}, #state{requester_pid = undefined} = State) ->
+handle_call({set_requester_pid, RequesterPid}, _From, #state{requester_pid = undefined} = State) ->
   {ok, GunConnectionPid} = connection_lib:open(),
 
   GunConnectionMonitorRef = monitor(process, GunConnectionPid),
@@ -51,9 +49,11 @@ handle_cast({set_requester_pid, RequesterPid}, #state{requester_pid = undefined}
     gun_connection_monitor_ref = GunConnectionMonitorRef
   },
 
-  {noreply, NewState};
+  {reply, ok, NewState};
 
 %%%===================================================================
+
+handle_call(_Request, _From, State) -> {reply, ok, State}.
 
 handle_cast(_Request, State) -> {noreply, State}.
 
@@ -175,18 +175,23 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%%===================================================================
 
 start_requests(GunConnectionPid, RequesterPid, Count) ->
-  {ok, Requests} = requester_server:reserve(RequesterPid, Count),
+  case requester_server:reserve(RequesterPid, Count) of
+    {ok, Requests} ->
+      maps:from_list(
+        lists:map(
+          fun({RequestRef, RequestData}) ->
+            StreamRef = connection_lib:request(GunConnectionPid, RequestData),
+            {ok, RequestPid} = request_server:start_link(RequesterPid, RequestRef),
+            {StreamRef, {RequestPid, RequestRef}}
+          end,
+          Requests
+        )
+      );
 
-  maps:from_list(
-    lists:map(
-      fun({RequestRef, RequestData}) ->
-        StreamRef = connection_lib:request(GunConnectionPid, RequestData),
-        {ok, RequestPid} = request_server:start_link(RequesterPid, RequestRef),
-        {StreamRef, {RequestPid, RequestRef}}
-      end,
-      Requests
-    )
-  ).
+    {sleep, Timeout} ->
+      timer:sleep(Timeout),
+      start_requests(GunConnectionPid, RequesterPid, Count)
+  end.
 
 all_error(Streams, _Reason) when map_size(Streams) =:= 0 -> ok;
 
