@@ -21,8 +21,8 @@ start_link() ->
     {logic, LogicPid, _, _}
   ] = supervisor:which_children(SupervisorPid),
 
-  ok = mock_logic_server:set_requester_pid(LogicPid, RequesterPid),
-  ok = connection_server:set_requester_pid(ConnectionPid, RequesterPid),
+  ok = logic_server:set_coworkers(LogicPid, [RequesterPid]),
+  ok = connection_server:set_coworkers(ConnectionPid, [RequesterPid]),
 
   {ok, SupervisorPid}.
 
@@ -36,7 +36,7 @@ init([]) ->
   Specifications = [
     #{
       id => logic,
-      start => {mock_logic_server, start_link, []},
+      start => {logic_server, start_link, []},
       type => worker
     },
     #{

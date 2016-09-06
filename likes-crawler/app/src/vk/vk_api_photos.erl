@@ -1,22 +1,29 @@
 -module(vk_api_photos).
 
 %%% api
--export([get_with_like_count/2]).
+-export([get_with_likes_count/2]).
+
+%%% internal
+-export([process_album/2]).
 
 %%%===================================================================
 %%% api
 %%%===================================================================
 
-get_with_like_count(Owner, Call) -> lists:unzip(process(Owner, Call)).
+get_with_likes_count(Call, Owner) -> lists:unzip(process(Call, Owner)).
 
 %%%===================================================================
 %%% internal
 %%%===================================================================
 
-process(Owner, Call) -> lists:concat([process_album(Album, Call) || Album <- get_albums(Owner)]).
+process(Call, Owner) -> lists:concat(
+  rpc:parallel_eval([
+    {?MODULE, process_album, [Call, Album]} || Album <- get_albums(Owner)
+  ])
+).
 
-process_album(Album, Call) ->
-  Response = vk_list:get(album_request(Album), Call),
+process_album(Call, Album) ->
+  {response, Response} = vk_list:get(Call, album_request_data(Album)),
   [{get_photo(Item), get_like_count(Item)} || Item <- Response].
 
 get_albums(Owner) -> [{Owner, Album} || Album <- [profile, wall]].
@@ -24,7 +31,7 @@ get_albums(Owner) -> [{Owner, Album} || Album <- [profile, wall]].
 get_photo(#{<<"id">> := Item, <<"owner_id">> := Owner}) -> {Owner, Item}.
 get_like_count(#{<<"likes">> := #{<<"count">> := Count}}) -> Count.
 
-album_request({Owner, Album}) -> {
+album_request_data({Owner, Album}) -> {
   'photos.get',
   #{
     owner_id => Owner,

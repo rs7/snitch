@@ -1,5 +1,7 @@
 -module(vk_list).
 
+-define(COUNT_KEY, <<"count">>).
+-define(ITEMS_KEY, <<"items">>).
 -define(LIMIT, 1000).
 
 %%% api
@@ -9,39 +11,61 @@
 %%% api
 %%%===================================================================
 
-get(Request, Call) -> get(Request, get_count(Request, Call), Call).
+get(Call, RequestData) ->
+  case Call(page_request_data(RequestData, 1)) of
+    {response, #{?COUNT_KEY := 0}} ->
+      {response, []};
 
-get(Request, Count, Call) -> get_pages(Request, lists:seq(1, get_page_count(Count)), Call).
+    {response, #{?COUNT_KEY := ItemsCount, ?ITEMS_KEY := Items}} when ItemsCount =< ?LIMIT ->
+      {response, Items};
 
-get_count(Request, Call) -> extract_count(Call(count_request(Request))).
+    {response, #{?COUNT_KEY := ItemsCount, ?ITEMS_KEY := Items}} ->
+      Pages = get_pages(Call, RequestData, pages_from(2, ItemsCount)),
+      merge_pages(Pages, Items);
+
+    {error, ErrorCode} -> {error, ErrorCode}
+  end.
+
+get(Call, RequestData, ItemsCount) ->
+  Pages = get_pages(Call, RequestData, pages_from(1, ItemsCount)),
+  merge_pages(Pages, []).
+
+get_count(Call, RequestData) ->
+  {response, #{?COUNT_KEY := Count}} = Call(count_request_data(RequestData)),
+  Count.
 
 %%%===================================================================
 %%% internal
 %%%===================================================================
 
-get_pages(Request, Pages, Call) ->
-  Requests = [page_request(Request, Page) || Page <- Pages],
-  merge_responses(lists:map(Call, Requests)).
+pages_from(From, ItemsCount) -> lists:seq(From, get_page_count(ItemsCount)).
+
+get_pages(Call, Request, Pages) ->
+  Requests = [page_request_data(Request, Page) || Page <- Pages],
+  Call(Requests).
 
 get_page_count(ItemsCount) -> util:ceil(ItemsCount / ?LIMIT).
 
-extract_items(Response) -> maps:get(<<"items">>, Response).
+merge_pages([{response, #{?ITEMS_KEY := Items}} | Responses], AccItems) ->
+  merge_pages(Responses, [Items | AccItems]);
 
-extract_count(Response) -> maps:get(<<"count">>, Response).
+merge_pages([], AccItems) -> {response, lists:flatten(lists:reverse(AccItems))};
 
-merge_responses(Responses) -> lists:concat(lists:map(fun extract_items/1, Responses)).
+merge_pages([{error, ErrorCode} | _Responses], _AccItems) -> {error, ErrorCode}.
+
+%%%===================================================================
+%%% requests
+%%%===================================================================
 
 offset(Page) -> (Page - 1) * ?LIMIT.
 
-page_request({Method, Params}, Page) -> {
-  Method,
-  Params#{
-    count => ?LIMIT,
-    offset => offset(Page)
-  }
-}.
+page_request_data({Method, Params}, Page) -> {Method, page_request_params(Params, offset(Page))}.
 
-count_request({Method, Params}) -> {
+page_request_params(Params, 0) -> Params#{count => ?LIMIT};
+
+page_request_params(Params, Offset) -> Params#{count => ?LIMIT, offset => Offset}.
+
+count_request_data({Method, Params}) -> {
   Method,
   Params#{
     count => 0

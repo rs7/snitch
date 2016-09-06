@@ -3,20 +3,28 @@
 %%% api
 -export([get/2]).
 
+%%% internal
+-export([get_photo_likes/3]).
+
 %%%===================================================================
 %%% api
 %%%===================================================================
 
-get(Owner, Call) ->
-  {Photos, Counts} = vk_api_photos:get_with_like_count(Owner, Call),
-  Likes = [get_photo_likes(Photo, LikeCount, Call) || {Photo, LikeCount} <- lists:zip(Photos, Counts)],
-  lists:zip(Photos, Likes).
+get(Call, Owner) ->
+  {Photos, Counts} = vk_api_photos:get_with_likes_count(Call, Owner),
+  rpc:parallel_eval([
+    {?MODULE, get_photo_likes, [Call, Photo, LikeCount]}
+    ||
+    {Photo, LikeCount} <- lists:zip(Photos, Counts), LikeCount > 0
+  ]).
 
 %%%===================================================================
 %%% internal
 %%%===================================================================
 
-get_photo_likes(Photo, LikeCount, Call) -> vk_list:get(likes_request(Photo), LikeCount, Call).
+get_photo_likes(Call, Photo, LikeCount) ->
+  {response, Response} = vk_list:get(Call, likes_request(Photo), LikeCount),
+  {Photo, Response}.
 
 likes_request({Owner, Item}) -> {
   'likes.getList',

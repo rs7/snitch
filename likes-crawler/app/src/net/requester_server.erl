@@ -105,7 +105,7 @@ handle_cast(
 ) ->
   {{_RequestData, From}, NewReserved} = maps:take(RequestRef, Reserved),
 
-  gen_server:reply(From, {ok, Result}),
+  gen_server:reply(From, Result),
 
   NewState = State#state{
     reserved = NewReserved,
