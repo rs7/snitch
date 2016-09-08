@@ -101,8 +101,10 @@ handle_info(
   {gun_up, GunConnectionPid, http},
   #state{gun_connection_pid = GunConnectionPid, requester_pid = RequesterPid} = State
 ) ->
-  NewStreams = start_requests(GunConnectionPid, RequesterPid, ?REQUEST_COUNT_BY_CONNECTION),
-  NewState = State#state{streams = NewStreams},
+  Streams = maps:from_list(send(GunConnectionPid, RequesterPid)),
+  NewState = State#state{
+    streams = Streams
+  },
   {noreply, NewState};
 
 %%%===================================================================
@@ -185,24 +187,38 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%% internal
 %%%===================================================================
 
-start_requests(GunConnectionPid, RequesterPid, Count) ->
-  case requester_server:reserve(RequesterPid, Count) of
-    {ok, Requests} ->
-      maps:from_list(
-        lists:map(
-          fun({RequestRef, RequestData}) ->
-            StreamRef = connection_lib:request(GunConnectionPid, RequestData),
-            {ok, RequestPid} = request_server:start_link(RequesterPid, RequestRef),
-            {StreamRef, {RequestPid, RequestRef}}
-          end,
-          Requests
-        )
-      );
+send(GunConnectionPid, RequesterPid) ->
+  {ok, RequestInfos} = requester_server:reserve(RequesterPid, ?REQUEST_COUNT_BY_CONNECTION),
 
-    {sleep, Timeout} ->
-      timer:sleep(Timeout),
-      start_requests(GunConnectionPid, RequesterPid, Count)
-  end.
+  Count = length(RequestInfos),
+
+  if
+    Count < ?REQUEST_COUNT_BY_CONNECTION -> lager:warning("short request block (size: ~B)", [Count]);
+    true -> ok
+  end,
+
+  send(GunConnectionPid, RequesterPid, RequestInfos).
+
+send(GunConnectionPid, RequesterPid, [RequestInfo]) -> [send_one(GunConnectionPid, RequesterPid, RequestInfo, close)];
+
+send(GunConnectionPid, RequesterPid, [RequestInfo | RemainingRequestInfos]) ->
+  [
+    send_one(GunConnectionPid, RequesterPid, RequestInfo, continue)
+    |
+    send(GunConnectionPid, RequesterPid, RemainingRequestInfos)
+  ];
+
+send(_GunConnectionPid, _RequesterPid, []) -> [].
+
+send_one(GunConnectionPid, RequesterPid, {RequestRef, RequestData}, close) ->
+  StreamRef = connection_lib:request(GunConnectionPid, RequestData, close),
+  {ok, RequestPid} = request_server:start_link(RequesterPid, RequestRef),
+  {StreamRef, {RequestPid, RequestRef}};
+
+send_one(GunConnectionPid, RequesterPid, {RequestRef, RequestData}, continue) ->
+  StreamRef = connection_lib:request(GunConnectionPid, RequestData),
+  {ok, RequestPid} = request_server:start_link(RequesterPid, RequestRef),
+  {StreamRef, {RequestPid, RequestRef}}.
 
 requests_error(Streams, _Reason) when map_size(Streams) =:= 0 -> ok;
 

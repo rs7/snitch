@@ -8,8 +8,7 @@
 %%% behaviour
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
--define(HEAP_SIZE, 1000).
--define(PUT_STAT_TIMEOUT, 5 * 1000).
+-define(PUT_STAT_TIMEOUT, 10 * 1000).
 
 -record(state, {
   heap,
@@ -71,8 +70,19 @@ handle_call(
 
 handle_call(
   {reserve, Count}, _From, #state{heap = Heap, reserved = Reserved, stat_reserve_count = StatReserveCount} = State
-) when length(Heap) >= Count ->
-  {ReservedHeap, NewHeap} = lists:split(Count, Heap),
+) ->
+
+  case length(Heap) >= Count of
+    true -> {ReservedHeap, NewHeap} = lists:split(Count, Heap);
+
+    false ->
+      ReservedHeap = Heap,
+      NewHeap = []
+  end,
+
+  %можно переписать используя lists:sublist
+  %ReservedHeap = lists:sublist(Heap, Count),
+  %NewHeap = lists:sublist(Heap, Count, length(Heap) - Count)
 
   Result = [{RequestRef, RequestData} || {RequestRef, RequestData, _RequestFrom} <- ReservedHeap],
   ReservedMap = maps:from_list(
@@ -83,13 +93,9 @@ handle_call(
   NewState = State#state{
     heap = NewHeap,
     reserved = NewReserved,
-    stat_reserve_count = StatReserveCount + Count
+    stat_reserve_count = StatReserveCount + length(ReservedHeap)
   },
   {reply, {ok, Result}, NewState};
-
-handle_call({reserve, Count}, _From, #state{heap = Heap} = State) when length(Heap) < Count ->
-  lager:warning("heap is empty"),
-  {reply, {sleep, 1000}, State};
 
 %%%===================================================================
 
@@ -104,6 +110,8 @@ handle_cast(
   #state{reserved = Reserved, stat_reply_count = StatReplyCount, stat_release_count = StatReleaseCount} = State
 ) ->
   {{_RequestData, From}, NewReserved} = maps:take(RequestRef, Reserved),
+
+  lager:debug("RESULT"),
 
   gen_server:reply(From, Result),
 

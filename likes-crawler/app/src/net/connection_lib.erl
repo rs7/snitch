@@ -1,7 +1,7 @@
 -module(connection_lib).
 
 %%% api
--export([open/0, close/1, request/2]).
+-export([open/0, close/1, request/2, request/3]).
 
 -define(DISABLE_KEEPALIVE, 16#7FFFFFF).
 
@@ -18,22 +18,30 @@ open() ->
 
 close(GunConnectionPid) -> gun:shutdown(GunConnectionPid).
 
-request(GunConnectionPid, Request) -> request(GunConnectionPid, Request, get).
+request(GunConnectionPid, Request) -> request(GunConnectionPid, Request, post).
+
+request(GunConnectionPid, Request, close) -> request(GunConnectionPid, Request, post, close);
+
+request(GunConnectionPid, Request, Method) -> request(GunConnectionPid, Request, Method, []).
+
+request(GunConnectionPid, Request, Method, close) ->
+  request(GunConnectionPid, Request, Method, [{<<"Connection">>, <<"close">>}]);
 
 %%%===================================================================
 %%% internal
 %%%===================================================================
 
-request(GunConnectionPid, {Method, Params}, get) ->
+request(GunConnectionPid, {Method, Params}, get, Headers) ->
   gun:get(
     GunConnectionPid,
-    request_lib:path_with_query(Method, Params)
+    request_lib:path_with_query(Method, Params),
+    Headers
   );
 
-request(GunConnectionPid, {Method, Params}, post) ->
+request(GunConnectionPid, {Method, Params}, post, Headers) ->
   gun:post(
     GunConnectionPid,
     request_lib:path(Method),
-    [{<<"Content-Type">>, <<"application/x-www-form-urlencoded">>}],
+    [{<<"Content-Type">>, <<"application/x-www-form-urlencoded">>}] ++ Headers,
     request_lib:query(Params)
   ).

@@ -11,7 +11,7 @@
 %%% internal
 -export([call/2]).
 
--record(state, {requester_pid}).
+-record(state, {requester_pid, call}).
 
 %%%===================================================================
 %%% api
@@ -29,8 +29,10 @@ init([]) -> {ok, #state{}}.
 
 handle_call({set_coworkers, [RequesterPid]}, _From, #state{requester_pid = undefined} = State) ->
   self() ! start,
+  Call = create_call(RequesterPid),
   NewState = State#state{
-    requester_pid = RequesterPid
+    requester_pid = RequesterPid,
+    call = Call
   },
   {reply, ok, NewState};
 
@@ -38,16 +40,10 @@ handle_call(_Request, _From, State) -> {reply, ok, State}.
 
 handle_cast(_Request, State) -> {noreply, State}.
 
-handle_info(start, #state{requester_pid = RequesterPid} = State) ->
-  [
-    spawn(
-      fun Do() ->
-        {ok, _Result} = requester_server:call(RequesterPid, mock:get_random_request_data()),
-        Do()
-      end
-    )
-    || _ <- lists:seq(1, 150)
-  ],
+handle_info(start, #state{call = Call} = State) ->
+  Users = lists:seq(1052662, 1052662),
+  Result = vk_process:process_users(Call, Users, [1868286, 3059512, 3079367, 51066050]),
+  lager:info("~p", [Result]),
   {noreply, State};
 
 handle_info(_Info, State) -> {noreply, State}.
@@ -60,8 +56,15 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%% internal
 %%%===================================================================
 
-call(Call, [_ | _] = Requests) -> rpc:parallel_eval([
-  {?MODULE, call, [Call, Request]} || Request <- Requests
-]);
+call(RequesterPid, [RequestData]) -> [call(RequesterPid, RequestData)];
 
-call(Call, RequestData) -> Call(RequestData).
+call(RequesterPid, [_ | _] = RequestDataList) ->
+  {ok, Result} = util:parallel(
+    {?MODULE, call},
+    [[RequesterPid, RequestData] || RequestData <- RequestDataList]
+  ),
+  Result;
+
+call(RequesterPid, RequestData) -> requester_server:call(RequesterPid, RequestData).
+
+create_call(RequesterPid) -> fun(Args) -> call(RequesterPid, Args) end.

@@ -1,42 +1,41 @@
 -module(debug).
 
 %%% api
--export([start/3, call/1, init/0]).
+-export([init/0, call/1, start/3]).
 
 %%%===================================================================
-%%% api
+%%% general
 %%%===================================================================
 
-start(WorkerCount, Delay, LogLevel) ->
-  application:ensure_all_started(gun),
-  application:ensure_all_started(lager),
+init() -> init(debug).
 
-  lager:set_loglevel(lager_console_backend, LogLevel),
-
-  start_workers(WorkerCount, Delay).
+init(LogLevel) ->
+  {ok, _} = application:ensure_all_started(lager),
+  {ok, _} = application:ensure_all_started(gun),
+  ok = lager:set_loglevel(lager_console_backend, LogLevel).
 
 call([RequestData]) -> [call(RequestData)];
 
-call([_ | _] = RequestDataList) -> rpc:parallel_eval([
-  {?MODULE, call, RequestData} || RequestData <- RequestDataList
-]);
+call([_ | _] = RequestDataList) ->
+  rpc:parallel_eval([
+    {?MODULE, call, [RequestData]} || RequestData <- RequestDataList
+  ]);
 
 call(RequestData) ->
-  lager:debug("call ~p", [RequestData]),
+  lager:debug("debug:call ~p", [RequestData]),
   {ok, ConnectionPid} = connection_lib:open(),
   {ok, Body} = gun:await_body(ConnectionPid, connection_lib:request(ConnectionPid, RequestData)),
   connection_lib:close(ConnectionPid),
   {ok, Result} = response_lib:decode_body(Body),
   Result.
 
-init() ->
-  application:ensure_all_started(gun),
-  application:ensure_all_started(lager),
-  lager:set_loglevel(lager_console_backend, debug).
+%%%===================================================================
+%%% application
+%%%===================================================================
 
-%%%===================================================================
-%%% internal
-%%%===================================================================
+start(WorkerCount, Delay, LogLevel) ->
+  init(LogLevel),
+  start_workers(WorkerCount, Delay).
 
 start_workers(0, _Delay) -> ok;
 

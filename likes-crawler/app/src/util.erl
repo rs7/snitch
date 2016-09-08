@@ -1,7 +1,7 @@
 -module(util).
 
 %%% api
--export([ceil/1]).
+-export([ceil/1, parallel/2]).
 
 %%%===================================================================
 %%% api
@@ -13,3 +13,16 @@ ceil(Number) ->
     true -> TruncateNumber;
     false -> TruncateNumber + 1
   end.
+
+parallel({Module, Function}, ArgumentsList) ->
+  Result = rpc:parallel_eval([
+    {Module, Function, Arguments} || Arguments <- ArgumentsList
+  ]),
+  case process_rpc_result(Result) of
+    {error, Reason} -> {error, Reason};
+    ok -> {ok, Result}
+  end.
+
+process_rpc_result([{badrpc, Reason} | _]) -> {error, Reason};
+process_rpc_result([_ | Remaining]) -> process_rpc_result(Remaining);
+process_rpc_result([]) -> ok.

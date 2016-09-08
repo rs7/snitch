@@ -46,8 +46,7 @@ get_pages(Call, Request, Pages) ->
 
 get_page_count(ItemsCount) -> util:ceil(ItemsCount / ?LIMIT).
 
-merge_pages([{response, #{?ITEMS_KEY := Items}} | Responses], AccItems) ->
-  merge_pages(Responses, [Items | AccItems]);
+merge_pages([{response, #{?ITEMS_KEY := Items}} | Responses], AccItems) -> merge_pages(Responses, [Items | AccItems]);
 
 merge_pages([], AccItems) -> {response, lists:flatten(lists:reverse(AccItems))};
 
