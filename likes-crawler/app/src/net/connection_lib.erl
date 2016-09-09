@@ -18,14 +18,10 @@ open() ->
 
 close(GunConnectionPid) -> gun:shutdown(GunConnectionPid).
 
-request(GunConnectionPid, Request) -> request(GunConnectionPid, Request, post).
+request(GunConnectionPid, Request) -> request(GunConnectionPid, Request, post, []).
 
-request(GunConnectionPid, Request, close) -> request(GunConnectionPid, Request, post, close);
-
-request(GunConnectionPid, Request, Method) -> request(GunConnectionPid, Request, Method, []).
-
-request(GunConnectionPid, Request, Method, close) ->
-  request(GunConnectionPid, Request, Method, [{<<"Connection">>, <<"close">>}]);
+request(GunConnectionPid, Request, close) ->
+  request(GunConnectionPid, Request, post, [{<<"Connection">>, <<"close">>}]).
 
 %%%===================================================================
 %%% internal
@@ -42,6 +38,6 @@ request(GunConnectionPid, {Method, Params}, post, Headers) ->
   gun:post(
     GunConnectionPid,
     request_lib:path(Method),
-    [{<<"Content-Type">>, <<"application/x-www-form-urlencoded">>}] ++ Headers,
+    [{<<"Content-Type">>, <<"application/x-www-form-urlencoded">>} | Headers],
     request_lib:query(Params)
   ).

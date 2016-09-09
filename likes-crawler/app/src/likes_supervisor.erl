@@ -19,17 +19,22 @@ start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 %%%===================================================================
 
 init([]) ->
-  Strategy = #{strategy => one_for_all, intensity => 1, period => 5},
+  Strategy = #{strategy => one_for_all, intensity => 0, period => 1},
 
   Specifications = [
     #{
-      id => process,
-      start => {process, start_link, []},
+      id => heap,
+      start => {heap_server, start_link, []},
       type => worker
     },
     #{
-      id => pool,
-      start => {pool, start_link, []},
+      id => workers,
+      start => {workers_supervisor, start_link, []},
+      type => supervisor
+    },
+    #{
+      id => logic,
+      start => {logic_server, start_link, []},
       type => worker
     }
   ],
