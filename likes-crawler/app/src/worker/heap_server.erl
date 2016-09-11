@@ -9,6 +9,7 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 -define(INFO_STAT_TIMEOUT, 10 * 1000).
+-define(SET_WORKERS_COUNT_TIMEOUT, 1 * 1000).
 -define(RESERVE_SIZE, 1000).
 -define(SERVER_NAME, {global, ?MODULE}).
 
@@ -23,6 +24,7 @@
 -record(state, {
   heap = [],
   reserved = #{},
+  workers_count = 0,
   stat = #stat{}
 }).
 
@@ -44,6 +46,7 @@ release(RequestRef, Result) -> gen_server:cast(?SERVER_NAME, {release, RequestRe
 
 init([]) ->
   self() ! info_stat,
+  self() ! set_workers_count,
   {ok, #state{}}.
 
 %%%===================================================================
@@ -142,6 +145,7 @@ handle_info(
   info_stat,
   #state{
     heap = Heap,
+    workers_count = WorkersCount,
     stat = #stat{
       call_count = CallCount,
       reply_count = ReplyCount,
@@ -154,11 +158,16 @@ handle_info(
   erlang:send_after(?INFO_STAT_TIMEOUT, self(), info_stat),
 
   {message_queue_len, MessageQueueLen} = erlang:process_info(self(), message_queue_len),
-  lager:info(
-    "heap ~p mailbox ~p call ~p reply ~p reserve ~p release ~p retry ~p",
+  lager:debug(
+    "heap ~B workers ~B mailbox ~B "
+    "call ~B reply ~B wait ~B "
+    "reserve ~B release ~B reserved ~B "
+    "retry ~B ",
     [
-      length(Heap), MessageQueueLen,
-      CallCount, ReplyCount, ReserveCount, ReleaseCount, RetryCount
+      length(Heap), WorkersCount, MessageQueueLen,
+      CallCount, ReplyCount, CallCount - ReplyCount,
+      ReserveCount, ReleaseCount, ReserveCount - ReleaseCount,
+      RetryCount
     ]
   ),
   {noreply, State};
@@ -166,6 +175,16 @@ handle_info(
 handle_info({'DOWN', MonitorRef, process, Pid, Reason}, State) ->
   lager:warning("reserve process DOWN ~p ~p", [Pid, Reason]),
   {noreply, State};
+
+handle_info(set_workers_count, #state{heap = Heap, workers_count = WorkersCount} = State) ->
+  erlang:send_after(?SET_WORKERS_COUNT_TIMEOUT, self(), set_workers_count),
+  NewWorkersCount = util:ceil(length(Heap) / 1000),
+  if
+    NewWorkersCount =/= WorkersCount -> workers_supervisor:set_workers_count(NewWorkersCount);
+    true -> ok
+  end,
+  NewState = State#state{workers_count = NewWorkersCount},
+  {noreply, NewState};
 
 handle_info(_Info, State) -> {noreply, State}.
 

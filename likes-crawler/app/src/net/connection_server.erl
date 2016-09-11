@@ -106,9 +106,7 @@ handle_info(
 
 handle_info(
   {gun_up, GunConnectionPid, http},
-  #state{
-    gun_connection_pid = GunConnectionPid, requester_pid = RequesterPid
-  } = State
+  #state{gun_connection_pid = GunConnectionPid, requester_pid = RequesterPid} = State
 ) ->
   RequestsInProgress = maps:from_list(run_block(GunConnectionPid, RequesterPid)),
   NewState = State#state{requests_in_progress = RequestsInProgress},

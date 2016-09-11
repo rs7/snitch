@@ -3,7 +3,7 @@
 -behaviour(supervisor).
 
 %%% api
--export([start_link/0]).
+-export([start_link/0, set_workers_count/1, get_current_workers_count/0]).
 
 %%% behaviour
 -export([init/1]).
@@ -12,10 +12,25 @@
 %%% api
 %%%===================================================================
 
-start_link() ->
-  {ok, SupervisorPid} = supervisor:start_link({local, ?MODULE}, ?MODULE, []),
-  start_children(SupervisorPid, 10),
-  {ok, SupervisorPid}.
+start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+
+set_workers_count(Count) ->
+  Pids = get_workers_pids(),
+  set_workers_count(Count, length(Pids), Pids).
+
+set_workers_count(Count, CurrentCount, _Pids) when Count =:= CurrentCount ->
+  lager:debug("workers count set to ~B", [CurrentCount]),
+  ok;
+
+set_workers_count(Count, CurrentCount, _Pids) when Count >= CurrentCount ->
+  {ok, _Pid} = supervisor:start_child(?MODULE, []),
+  set_workers_count(Count, CurrentCount + 1, [_Pid | _Pids]);
+
+set_workers_count(Count, CurrentCount, [Pid | Pids]) when Count =< CurrentCount ->
+  {ok, _Pid} = supervisor:terminate_child(?MODULE, Pid),
+  set_workers_count(Count, CurrentCount - 1, Pids).
+
+get_current_workers_count() -> length(get_workers_pids()).
 
 %%%===================================================================
 %%% behaviour
@@ -38,8 +53,4 @@ init([]) ->
 %%% internal
 %%%===================================================================
 
-start_children(_SupervisorPid, 0) -> ok;
-
-start_children(SupervisorPid, N) ->
-  {ok, _Pid} = supervisor:start_child(SupervisorPid, []),
-  start_children(SupervisorPid, N - 1).
+get_workers_pids() -> [Pid || {worker, Pid, _, _} <- supervisor:which_children(?MODULE)].

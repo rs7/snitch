@@ -1,7 +1,7 @@
 -module(mock).
 
 %%% api
--export([get_request_data/0, get_random_request_data/0]).
+-export([get_request_data/0, get_random_request_data/0, save_found_like/2]).
 -export(['utils.getServerTime'/0, 'friends.get'/0, 'users.get'/0, 'photos.get'/0]).
 
 %%%===================================================================
@@ -30,3 +30,5 @@ get_random_request_data() ->
 'photos.get'() -> {'photos.get', #{owner_id => user(), album_id => profile, v => '5.53'}}.
 
 user() -> rand:uniform(380000000).
+
+save_found_like(User, {Owner, Photo}) -> lager:info("LIKE FOUND! id~B photo~B_~B", [User, Owner, Photo]).
