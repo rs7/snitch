@@ -11,7 +11,6 @@
 -define(INFO_STAT_TIMEOUT, 10 * 1000).
 -define(SET_WORKERS_COUNT_TIMEOUT, 1 * 1000).
 -define(RESERVE_SIZE, 1000).
--define(SERVER_NAME, {global, ?MODULE}).
 
 -record(stat, {
   call_count = 0,
@@ -32,13 +31,13 @@
 %%% api
 %%%===================================================================
 
-start_link() -> gen_server:start_link(?SERVER_NAME, ?MODULE, [], []).
+start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
-call(RequestData) -> gen_server:call(?SERVER_NAME, {call, RequestData}, infinity).
+call(RequestData) -> gen_server:call(?MODULE, {call, RequestData}, infinity).
 
-reserve() -> gen_server:call(?SERVER_NAME, reserve, infinity).
+reserve() -> gen_server:call(?MODULE, reserve, infinity).
 
-release(RequestRef, Result) -> gen_server:cast(?SERVER_NAME, {release, RequestRef, Result}).
+release(RequestRef, Result) -> gen_server:cast(?MODULE, {release, RequestRef, Result}).
 
 %%%===================================================================
 %%% behaviour

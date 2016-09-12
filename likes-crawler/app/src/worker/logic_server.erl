@@ -33,7 +33,7 @@ handle_cast(_Request, State) -> {noreply, State}.
 
 handle_info(start, State) ->
   ok = vk_process:process_users(fun call/1, lists:seq(2, 1000), [1]),
-  lager:info("-finish---------------------------------"),
+  lager:info("finish"),
   {noreply, State};
 
 handle_info(_Info, State) -> {noreply, State}.

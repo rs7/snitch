@@ -28,9 +28,9 @@ process_user(User) -> [{User, Album} || Album <- [profile, wall]].
 process_album(Call, Album) ->
   {response, Response} = vk_list:get(Call, album_request_data(Album)),
   [
-    {{User, Id}, Count}
+    {{Owner, Id}, Count}
     ||
-    #{<<"id">> := Id, <<"owner_id">> := User, <<"likes">> := #{<<"count">> := Count}} <- Response,
+    #{<<"id">> := Id, <<"owner_id">> := Owner, <<"likes">> := #{<<"count">> := Count}} <- Response,
     Count > 0
   ].
 

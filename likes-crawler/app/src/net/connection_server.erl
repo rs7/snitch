@@ -46,13 +46,9 @@ handle_call(
 
 %%%===================================================================
 
-handle_call(UnexpectedRequest, _From, State) ->
-  lager:warning("unexpected call ~p", [UnexpectedRequest]),
-  {reply, ok, State}.
+handle_call(_Request, _From, State) -> {reply, ok, State}.
 
-handle_cast(UnexpectedRequest, State) ->
-  lager:warning("unexpected cast ~p", [UnexpectedRequest]),
-  {noreply, State}.
+handle_cast(_Request, State) -> {noreply, State}.
 
 %%%===================================================================
 %%% 'DOWN'
@@ -172,6 +168,8 @@ handle_info(
   {noreply, NewState};
 
 %%%===================================================================
+%%% connect
+%%%===================================================================
 
 handle_info(connect, State) ->
   {ok, GunConnectionPid} = connection_lib:open(),
@@ -184,6 +182,8 @@ handle_info(connect, State) ->
   },
 
   {noreply, NewState};
+
+%%%===================================================================
 
 handle_info(UnexpectedMessage, State) ->
   lager:warning("unexpected message ~p", [UnexpectedMessage]),

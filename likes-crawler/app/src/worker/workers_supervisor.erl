@@ -3,7 +3,7 @@
 -behaviour(supervisor).
 
 %%% api
--export([start_link/0, set_workers_count/1, get_current_workers_count/0]).
+-export([start_link/0, set_workers_count/1]).
 
 %%% behaviour
 -export([init/1]).
@@ -29,8 +29,6 @@ set_workers_count(Count, CurrentCount, _Pids) when Count >= CurrentCount ->
 set_workers_count(Count, CurrentCount, [Pid | Pids]) when Count =< CurrentCount ->
   {ok, _Pid} = supervisor:terminate_child(?MODULE, Pid),
   set_workers_count(Count, CurrentCount - 1, Pids).
-
-get_current_workers_count() -> length(get_workers_pids()).
 
 %%%===================================================================
 %%% behaviour
