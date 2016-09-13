@@ -1,7 +1,7 @@
 -module(util).
 
 %%% api
--export([ceil/1, parallel/2, list_split/2]).
+-export([ceil/1, parallel/2, list_split/2, list_partition/2]).
 
 %%%===================================================================
 %%% api
@@ -9,7 +9,7 @@
 
 ceil(Number) ->
   TruncateNumber = trunc(Number),
-  case TruncateNumber == Number of
+  case TruncateNumber =:= Number of
     true -> TruncateNumber;
     false -> TruncateNumber + 1
   end.
@@ -30,3 +30,9 @@ process_rpc_result([]) -> ok.
 list_split(List, Count) when length(List) >= Count -> lists:split(Count, List);
 
 list_split(List, _Count) -> {List, []}.
+
+list_partition(List, PageSize) when length(List) =< PageSize -> [List];
+
+list_partition(List, PageSize) ->
+  {Part, Remaining} = lists:split(PageSize, List),
+  [Part | list_partition(Remaining, PageSize)].

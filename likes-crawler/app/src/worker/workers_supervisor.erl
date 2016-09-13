@@ -12,7 +12,10 @@
 %%% api
 %%%===================================================================
 
-start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+start_link() ->
+  {ok, Pid} = supervisor:start_link({local, ?MODULE}, ?MODULE, []),
+  set_workers_count(3),
+  {ok, Pid}.
 
 set_workers_count(Count) ->
   Pids = get_workers_pids(),

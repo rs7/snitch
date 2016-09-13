@@ -45,7 +45,6 @@ release(RequestRef, Result) -> gen_server:cast(?MODULE, {release, RequestRef, Re
 
 init([]) ->
   self() ! info_stat,
-  self() ! set_workers_count,
   {ok, #state{}}.
 
 %%%===================================================================
@@ -53,7 +52,7 @@ init([]) ->
 %%%===================================================================
 
 handle_call({call, RequestData}, RequestFrom, #state{heap = Heap, stat = Stat} = State) ->
-  NewHeap = Heap ++ [{RequestData, RequestFrom}],
+  NewHeap = [{RequestData, RequestFrom} | Heap],
   NewState = State#state{
     heap = NewHeap,
     stat = Stat#stat{call_count = Stat#stat.call_count + 1}
@@ -174,16 +173,6 @@ handle_info(
 handle_info({'DOWN', MonitorRef, process, Pid, Reason}, State) ->
   lager:warning("reserve process DOWN ~p ~p", [Pid, Reason]),
   {noreply, State};
-
-handle_info(set_workers_count, #state{heap = Heap, workers_count = WorkersCount} = State) ->
-  erlang:send_after(?SET_WORKERS_COUNT_TIMEOUT, self(), set_workers_count),
-  NewWorkersCount = util:ceil(length(Heap) / 1000),
-  if
-    NewWorkersCount =/= WorkersCount -> workers_supervisor:set_workers_count(NewWorkersCount);
-    true -> ok
-  end,
-  NewState = State#state{workers_count = NewWorkersCount},
-  {noreply, NewState};
 
 handle_info(_Info, State) -> {noreply, State}.
 

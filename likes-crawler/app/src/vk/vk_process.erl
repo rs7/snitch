@@ -1,11 +1,16 @@
 -module(vk_process).
 
 %%% api
+-export([process_users/3]).
+
+%%% internal
 -export([process/2]).
 
 %%%===================================================================
 %%% api
 %%%===================================================================
+
+process_users(Call, UserList, TargetList) -> ok.
 
 process(Call, {user_list, UserList}) -> [{user, User} || User <- process_user_list(Call, UserList)];
 
@@ -14,6 +19,11 @@ process(_Call, {user, User}) -> [{album, Album} || Album <- process_user(User)];
 process(Call, {album, Album}) -> [{photo, Photo} || Photo <- process_album(Call, Album)];
 
 process(Call, {photo, Photo}) -> [{like, Like} || Like <- process_photo(Call, Photo)].
+
+%%  {ok, Result} = util:parallel(
+%%    {?MODULE, process_user},
+%%    [[Call, User] || User <- ActiveUsers]
+%%  )
 
 %%%===================================================================
 %%% internal
