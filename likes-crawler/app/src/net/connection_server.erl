@@ -218,13 +218,17 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 run_block(GunConnectionPid, RequesterPid) ->
   {ok, RequestInfos} = requester_server:reserve(RequesterPid, ?REQUEST_COUNT_BY_CONNECTION),
 
-  Count = length(RequestInfos),
-  if
-    Count < ?REQUEST_COUNT_BY_CONNECTION -> lager:warning("short request block (size: ~B)", [Count]);
-    true -> ok
-  end,
+  case length(RequestInfos) of
+    0 ->
+      timer:sleep(100),
+      run_block(GunConnectionPid, RequesterPid);
 
-  run_requests(GunConnectionPid, RequesterPid, RequestInfos).
+    ?REQUEST_COUNT_BY_CONNECTION -> run_requests(GunConnectionPid, RequesterPid, RequestInfos);
+
+    Count ->
+      lager:warning("short request block (size: ~B)", [Count]),
+      run_requests(GunConnectionPid, RequesterPid, RequestInfos)
+  end.
 
 run_requests(_GunConnectionPid, _RequesterPid, []) -> [];
 

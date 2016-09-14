@@ -1,4 +1,4 @@
--module(logic_server).
+-module(process_server).
 
 -behaviour(gen_server).
 
@@ -11,30 +11,28 @@
 %%% internal
 -export([call/1]).
 
--record(state, {}).
+-record(state, {
+  pipeline = [],
+  first_user = 1,
+  last_user = 1000,
+  targeted_users = ordsets:from_list([1, 2, 3])
+}).
 
 %%%===================================================================
 %%% api
 %%%===================================================================
 
-start_link() -> gen_server:start_link(?MODULE, [], []).
+start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 %%%===================================================================
 %%% behaviour
 %%%===================================================================
 
-init([]) ->
-  self() ! start,
-  {ok, #state{}}.
+init([]) -> {ok, #state{}}.
 
 handle_call(_Request, _From, State) -> {reply, ok, State}.
 
 handle_cast(_Request, State) -> {noreply, State}.
-
-handle_info(start, State) ->
-  ok = vk_process:process_users(fun call/1, lists:seq(2, 1000), [1]),
-  lager:info("finish"),
-  {noreply, State};
 
 handle_info(_Info, State) -> {noreply, State}.
 
@@ -45,14 +43,5 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%%===================================================================
 %%% internal
 %%%===================================================================
-
-call([RequestData]) -> [call(RequestData)];
-
-call([_ | _] = RequestDataList) ->
-  {ok, Result} = util:parallel(
-    {?MODULE, call},
-    [[RequestData] || RequestData <- RequestDataList]
-  ),
-  Result;
 
 call(RequestData) -> heap_server:call(RequestData).

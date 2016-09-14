@@ -33,8 +33,8 @@ init([]) ->
       type => worker
     },
     #{
-      id => logic,
-      start => {logic_server, start_link, []},
+      id => process,
+      start => {process_server, start_link, []},
       type => worker
     }
   ],

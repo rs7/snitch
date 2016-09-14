@@ -9,7 +9,7 @@
 
 ceil(Number) ->
   TruncateNumber = trunc(Number),
-  case TruncateNumber =:= Number of
+  case TruncateNumber == Number of
     true -> TruncateNumber;
     false -> TruncateNumber + 1
   end.
@@ -28,11 +28,9 @@ process_rpc_result([_ | Remaining]) -> process_rpc_result(Remaining);
 process_rpc_result([]) -> ok.
 
 list_split(List, Count) when length(List) >= Count -> lists:split(Count, List);
-
 list_split(List, _Count) -> {List, []}.
 
-list_partition(List, PageSize) when length(List) =< PageSize -> [List];
-
-list_partition(List, PageSize) ->
-  {Part, Remaining} = lists:split(PageSize, List),
-  [Part | list_partition(Remaining, PageSize)].
+list_partition(List, PartSize) when length(List) =< PartSize -> [List];
+list_partition(List, PartSize) ->
+  {Part, Remaining} = lists:split(PartSize, List),
+  [Part | list_partition(Remaining, PartSize)].
