@@ -70,8 +70,6 @@ handle_call(
   #state{heap = Heap, reserved = Reserved, stat = Stat} = State
 ) ->
 
-  MonitorRef = monitor(process, ReservePid),
-
   {ReservedHeap, NewHeap} = util:list_split(Heap, ?RESERVE_SIZE),
 
   Helper = [{make_ref(), HeapItem} || HeapItem <- ReservedHeap],

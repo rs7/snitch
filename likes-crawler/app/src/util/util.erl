@@ -1,7 +1,7 @@
 -module(util).
 
 %%% api
--export([ceil/1, parallel/2, list_split/2, list_partition/2]).
+-export([ceil/1, parallel/2, list_split/2, list_partition/2, flatten/1, get_offsets/2]).
 
 %%%===================================================================
 %%% api
@@ -34,3 +34,10 @@ list_partition(List, PartSize) when length(List) =< PartSize -> [List];
 list_partition(List, PartSize) ->
   {Part, Remaining} = lists:split(PartSize, List),
   [Part | list_partition(Remaining, PartSize)].
+
+flatten(List) -> flatten(lists:reverse(List), []).
+flatten([], Acc) -> Acc;
+flatten([H | T], Acc) -> flatten(T, H ++ Acc).
+
+get_offsets(From, To) when From > To -> [];
+get_offsets(From, To) -> [From | get_offsets(From + 1000, To)].
