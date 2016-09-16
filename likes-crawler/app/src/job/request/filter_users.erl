@@ -1,13 +1,13 @@
 -module(filter_users).
 
 %%% api
--export([request/2, response/3]).
+-export([request/1, response/2]).
 
 %%%===================================================================
 %%% api
 %%%===================================================================
 
-request([UserList], _ProcessContext) ->
+request([UserList]) ->
   {
     'users.get',
     #{
@@ -16,7 +16,7 @@ request([UserList], _ProcessContext) ->
     }
   }.
 
-response({response, Response}, _RequestContext, _ProcessContext) ->
+response({response, Response}, _RequestContext) ->
   [
     {get_albums, [maps:get(<<"id">>, User)]}
     ||

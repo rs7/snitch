@@ -1,13 +1,13 @@
 -module(get_albums).
 
 %%% api
--export([request/2, response/3]).
+-export([request/1, response/2]).
 
 %%%===================================================================
 %%% api
 %%%===================================================================
 
-request([OwnerId], _ProcessContext) ->
+request([OwnerId]) ->
   {
     'photos.getAlbums',
     #{
@@ -17,7 +17,7 @@ request([OwnerId], _ProcessContext) ->
     }
   }.
 
-response({response, #{<<"items">> := AlbumItems}}, _RequestContext, _ProcessContext) ->
+response({response, #{<<"items">> := AlbumItems}}, _RequestContext) ->
   util:flatten(
     [
       [

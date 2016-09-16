@@ -1,13 +1,13 @@
 -module(get_likes).
 
 %%% api
--export([request/2, response/3]).
+-export([request/1, response/2]).
 
 %%%===================================================================
 %%% api
 %%%===================================================================
 
-request([OwnerId, PhotoId, Offset], _ProcessContext) ->
+request([OwnerId, PhotoId, Offset]) ->
   {
     'likes.getList',
     #{
@@ -20,15 +20,17 @@ request([OwnerId, PhotoId, Offset], _ProcessContext) ->
     }
   }.
 
-response({response, #{<<"items">> := Likers}}, [OwnerId, PhotoId, _Offset], [Targeted]) ->
+response({response, #{<<"items">> := Likers}}, [OwnerId, PhotoId, _Offset]) ->
   [
-    {out, [Liker, OwnerId, PhotoId]}
+    save([Liker, OwnerId, PhotoId])
     ||
-    Liker <- Likers, is_targeted(Liker, Targeted)
-  ].
+    Liker <- Likers
+  ],
+  [].
 
 %%%===================================================================
 %%% internal
 %%%===================================================================
 
-is_targeted(Liker, Targeted) -> ordsets:is_element(Liker, Targeted).
+save(_) -> ok.
+%save([Liker, OwnerId, PhotoId]) -> lager:info("id~B photo~B_~B", [Liker, OwnerId, PhotoId]).

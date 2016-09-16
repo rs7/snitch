@@ -9,8 +9,7 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 -record(state, {
-  heap = [],
-  reserved = #{}
+  reserve = #{}
 }).
 
 %%%===================================================================
@@ -19,7 +18,7 @@
 
 start_link() -> gen_server:start_link(?MODULE, [], []).
 
-reserve(RequesterPid, Count) -> gen_server:call(RequesterPid, {reserve, Count}, infinity).
+reserve(RequesterPid, RequestCount) -> gen_server:call(RequesterPid, {reserve, RequestCount}, infinity).
 
 release(RequesterPid, RequestRef, Result) -> gen_server:cast(RequesterPid, {release, RequestRef, Result}).
 
@@ -33,41 +32,54 @@ init([]) -> {ok, #state{}}.
 %%% reserve
 %%%===================================================================
 
-handle_call({reserve, Count}, _From, #state{heap = Heap, reserved = Reserved} = State) ->
+handle_call({reserve, RequestCount}, _From, #state{reserve = Reserve} = State) ->
 
-  AvailableRequests = case length(Heap) < Count of
-    true ->
-      {ok, NewRequests} = heap_server:reserve(),
-      Heap ++ NewRequests;
-    false -> Heap
-  end,
+  {ok, ReserveJobs} = gen_heap:pull(RequestCount),
 
-  {ResultRequests, NewHeap} = util:list_split(AvailableRequests, Count),
+  RequestDataItems = [Type:request(Args) || {Type, Args} <- ReserveJobs],
 
-  NewReserved = maps:merge(Reserved, maps:from_list(ResultRequests)),
+  RequestRefs = [make_ref() || _ <- RequestDataItems],
+
+  NewReserve = maps:from_list(lists:zip(RequestRefs, ReserveJobs)),
+
+  RequestInfos = lists:zip(RequestRefs, RequestDataItems),
 
   NewState = State#state{
-    heap = NewHeap,
-    reserved = NewReserved
+    reserve = maps:merge(Reserve, NewReserve)
   },
-  {reply, {ok, ResultRequests}, NewState};
+  {reply, {ok, RequestInfos}, NewState};
 
 %%%===================================================================
 
 handle_call(_Request, _From, State) -> {reply, ok, State}.
 
 %%%===================================================================
-%%% result
+%%% release
 %%%===================================================================
 
-%% TODO: группировать release-вызовы к heap_server
+handle_cast({release, RequestRef, {result, Result}}, #state{reserve = Reserve} = State) ->
+  {{Type, Args}, NewReserve} = maps:take(RequestRef, Reserve),
 
-handle_cast({release, RequestRef, Result}, #state{reserved = Reserved} = State) ->
-  {_RequestData, NewReserved} = maps:take(RequestRef, Reserved),
+  ResultJobs = Type:response(Result, Args),
 
-  heap_server:release(RequestRef, Result),
+  gen_heap:push(ResultJobs),
 
-  NewState = State#state{reserved = NewReserved},
+  NewState = State#state{
+    reserve = NewReserve
+  },
+  {noreply, NewState};
+
+
+handle_cast({release, RequestRef, {retry, Reason}}, #state{reserve = Reserve} = State) ->
+  {RetryJob, NewReserve} = maps:take(RequestRef, Reserve),
+
+  lager:warning("retry ~p ~p", [RetryJob, Reason]),
+
+  gen_heap:push(RetryJob),
+
+  NewState = State#state{
+    reserve = NewReserve
+  },
   {noreply, NewState};
 
 %%%===================================================================

@@ -3,174 +3,77 @@
 -behaviour(gen_server).
 
 %%% api
--export([start_link/0, call/1, reserve/0, release/2]).
+-export([start_link/1, push/1, pull/1]).
 
 %%% behaviour
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
--define(INFO_STAT_TIMEOUT, 10 * 1000).
--define(SET_WORKERS_COUNT_TIMEOUT, 1 * 1000).
--define(RESERVE_SIZE, 1000).
-
--record(stat, {
-  call_count = 0,
-  reply_count = 0,
-  reserve_count = 0,
-  release_count = 0,
-  retry_count = 0
-}).
+-define(MIN_HEAP_SIZE, 1000).
+-define(INCREASE_HEAP_SIZE, 2000).
 
 -record(state, {
-  heap = [],
-  reserved = #{},
-  workers_count = 0,
-  stat = #stat{}
+  source,
+  heap = [{filter_users, [[1052662]]}]
 }).
 
 %%%===================================================================
 %%% api
 %%%===================================================================
 
-start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+start_link(JobSource) -> gen_server:start_link({local, ?MODULE}, ?MODULE, JobSource, []).
 
-call(RequestData) -> gen_server:call(?MODULE, {call, RequestData}, infinity).
+push(Jobs) -> gen_server:cast(?MODULE, {push, Jobs}).
 
-reserve() -> gen_server:call(?MODULE, reserve, infinity).
-
-release(RequestRef, Result) -> gen_server:cast(?MODULE, {release, RequestRef, Result}).
+pull(JobCount) -> gen_server:call(?MODULE, {pull, JobCount}).
 
 %%%===================================================================
 %%% behaviour
 %%%===================================================================
 
-init([]) ->
-  self() ! info_stat,
-  {ok, #state{}}.
+init(JobSource) ->
+  NewState = #state{source = JobSource},
+  {ok, NewState}.
 
 %%%===================================================================
-%%% call
+%%% pull
 %%%===================================================================
 
-handle_call({call, RequestData}, RequestFrom, #state{heap = Heap, stat = Stat} = State) ->
-  NewHeap = [{RequestData, RequestFrom} | Heap],
-  NewState = State#state{
-    heap = NewHeap,
-    stat = Stat#stat{call_count = Stat#stat.call_count + 1}
-  },
-  {noreply, NewState};
+handle_call({pull, JobCount}, _From, #state{heap = Heap, source = Source} = State) ->
 
-%%%===================================================================
-%%% reserve
-%%%===================================================================
+  {PullHeap, NewHeap} = util:list_split(Heap, JobCount),
 
-%%TODO: монитор на резервирующий процесс
-%%TODO: ожидание, пока не наберётся Count?
-handle_call(
-  reserve, {ReservePid, _Tag},
-  #state{heap = Heap, reserved = Reserved, stat = Stat} = State
-) ->
+  case length(NewHeap) >= ?MIN_HEAP_SIZE of
+    true ->
+      NewState = State#state{heap = NewHeap},
+      {reply, {ok, PullHeap}, NewState};
 
-  {ReservedHeap, NewHeap} = util:list_split(Heap, ?RESERVE_SIZE),
-
-  Helper = [{make_ref(), HeapItem} || HeapItem <- ReservedHeap],
-
-  Result = [{RequestRef, RequestData} || {RequestRef, {RequestData, _RequestFrom}} <- Helper],
-
-  ReservedMap = maps:from_list(Helper),
-
-  NewReserved = maps:merge(Reserved, ReservedMap),
-
-  NewState = State#state{
-    heap = NewHeap,
-    reserved = NewReserved,
-    stat = Stat#stat{reserve_count = Stat#stat.reserve_count + length(ReservedHeap)}
-  },
-  {reply, {ok, Result}, NewState};
+    false ->
+      gen_server:reply(_From, {ok, PullHeap}),
+      {ok, IncreaseHeap} = Source(?INCREASE_HEAP_SIZE),
+      NewState = State#state{heap = NewHeap ++ IncreaseHeap},
+      {noreply, NewState}
+  end;
 
 %%%===================================================================
 
 handle_call(_Request, _From, State) -> {reply, ok, State}.
 
 %%%===================================================================
-%%% result
+%%% push
 %%%===================================================================
 
-handle_cast({release, RequestRef, {result, Result}}, #state{reserved = Reserved, stat = Stat} = State) ->
-  {HeapItem, NewReserved} = maps:take(RequestRef, Reserved),
+handle_cast({push, Jobs}, #state{heap = Heap} = State) ->
+  lager:debug("heap size: ~B", [length(Heap)]),
 
-  {_RequestData, RequestFrom} = HeapItem,
-
-  gen_server:reply(RequestFrom, Result),
-
+  NewHeap = Jobs ++ Heap,
   NewState = State#state{
-    reserved = NewReserved,
-    stat = Stat#stat{
-      reply_count = Stat#stat.reply_count + 1,
-      release_count = Stat#stat.release_count + 1
-    }
-  },
-  {noreply, NewState};
-
-%%%===================================================================
-%%% retry
-%%%===================================================================
-
-%% TODO: нужна ли здесь причина повтора (Reason)?
-
-handle_cast({release, RequestRef, {retry, Reason}}, #state{heap = Heap, reserved = Reserved, stat = Stat} = State) ->
-  {HeapItem, NewReserved} = maps:take(RequestRef, Reserved),
-
-  lager:warning("retry ~p ~p", [HeapItem, Reason]),
-
-  NewHeap = [HeapItem | Heap],
-  NewState = State#state{
-    heap = NewHeap,
-    reserved = NewReserved,
-    stat = Stat#stat{
-      retry_count = Stat#stat.retry_count + 1,
-      release_count = Stat#stat.release_count + 1
-    }
+    heap = NewHeap
   },
   {noreply, NewState};
 
 %%%===================================================================
 
 handle_cast(_Request, State) -> {noreply, State}.
-
-handle_info(
-  info_stat,
-  #state{
-    heap = Heap,
-    workers_count = WorkersCount,
-    stat = #stat{
-      call_count = CallCount,
-      reply_count = ReplyCount,
-      reserve_count = ReserveCount,
-      release_count = ReleaseCount,
-      retry_count = RetryCount
-    }
-  } = State
-) ->
-  erlang:send_after(?INFO_STAT_TIMEOUT, self(), info_stat),
-
-  {message_queue_len, MessageQueueLen} = erlang:process_info(self(), message_queue_len),
-  lager:debug(
-    "heap ~B workers ~B mailbox ~B "
-    "call ~B reply ~B wait ~B "
-    "reserve ~B release ~B reserved ~B "
-    "retry ~B ",
-    [
-      length(Heap), WorkersCount, MessageQueueLen,
-      CallCount, ReplyCount, CallCount - ReplyCount,
-      ReserveCount, ReleaseCount, ReserveCount - ReleaseCount,
-      RetryCount
-    ]
-  ),
-  {noreply, State};
-
-handle_info({'DOWN', MonitorRef, process, Pid, Reason}, State) ->
-  lager:warning("reserve process DOWN ~p ~p", [Pid, Reason]),
-  {noreply, State};
 
 handle_info(_Info, State) -> {noreply, State}.
 

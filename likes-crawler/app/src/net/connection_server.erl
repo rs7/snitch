@@ -218,6 +218,8 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 run_block(GunConnectionPid, RequesterPid) ->
   {ok, RequestInfos} = requester_server:reserve(RequesterPid, ?REQUEST_COUNT_BY_CONNECTION),
 
+  lager:debug("run_block length ~B", [length(RequestInfos)]),
+
   case length(RequestInfos) of
     0 ->
       timer:sleep(100),

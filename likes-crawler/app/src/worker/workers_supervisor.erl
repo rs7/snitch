@@ -14,7 +14,7 @@
 
 start_link() ->
   {ok, Pid} = supervisor:start_link({local, ?MODULE}, ?MODULE, []),
-  set_workers_count(3),
+  set_workers_count(1),
   {ok, Pid}.
 
 set_workers_count(Count) ->

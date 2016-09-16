@@ -28,13 +28,13 @@ init([]) ->
       type => supervisor
     },
     #{
-      id => heap,
-      start => {heap_server, start_link, []},
+      id => root_heap,
+      start => {root_heap_server, start_link, []},
       type => worker
     },
     #{
-      id => process,
-      start => {process_server, start_link, []},
+      id => heap,
+      start => {heap_server, start_link, [fun root_heap_server:generate_jobs/1]},
       type => worker
     }
   ],
