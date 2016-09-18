@@ -3,35 +3,38 @@
 -behaviour(gen_heap).
 
 %%% api
--export([start_link/0, pull/1, push/1]).
+-export([start_link/2, pull/2, push/2]).
 
 %%% behaviour
--export([init/1, pull/2, push/2]).
+-export([init/1, pull_up/2, push_up/2]).
 
--record(state, {n}).
+-record(state, {parent}).
 
 %%%===================================================================
 %%% api
 %%%===================================================================
 
-start_link() -> gen_heap:start_link({local, ?MODULE}, ?MODULE, []).
+start_link(ParentHeap, {MinSize, NormalSize, MaxSize}) ->
+  gen_heap:start_link(?MODULE, [ParentHeap, {MinSize, NormalSize, MaxSize}]).
 
-pull(Count) -> gen_heap:pull(?MODULE, Count).
+pull(Heap, Count) -> gen_heap:pull(Heap, Count).
 
-push(Items) -> gen_heap:push(?MODULE, Items).
+push(Heap, Items) -> gen_heap:push(Heap, Items).
 
 %%%===================================================================
 %%% behaviour
 %%%===================================================================
 
-init([]) -> {ok, 5, 17, 10, #state{n = 0}}.
+init([ParentHeap, Sizes]) ->
+  NewState = #state{parent = ParentHeap},
+  {ok, Sizes, NewState}.
 
-pull(Count, #state{n = N} = State) ->
-  Result = [X || X <- lists:seq(N + 1, N + Count)],
-  io:format("pull ~p ~n", [Result]),
-  NewState = State#state{n = N + Count},
-  {ok, Result, NewState}.
+pull_up(Count, #state{parent = ParentHeap} = State) ->
+  lager:debug("child_heap pull_up ~B", [Count]),
+  {ok, Result} = gen_heap:pull(ParentHeap, Count),
+  {ok, Result, State}.
 
-push(Items, State) ->
-  io:format("push ~p ~n", [Items]),
+push_up(Items, #state{parent = ParentHeap} = State) ->
+  lager:debug("child_heap push_up ~B", [length(Items)]),
+  ok = gen_heap:push(ParentHeap, Items),
   {ok, State}.

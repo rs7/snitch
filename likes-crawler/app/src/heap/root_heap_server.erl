@@ -1,14 +1,13 @@
 -module(root_heap_server).
 
--behaviour(gen_server).
+-behaviour(gen_heap).
 
 %%% api
--export([start_link/0, generate_jobs/1]).
+-export([start_link/0, pull/1, push/1]).
 
 %%% behaviour
--export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-export([init/1, pull_up/2, push_up/2]).
 
--define(FILTER_USERS_SIZE, 1000).
 -define(SERVER_NAME, {global, ?MODULE}).
 
 -record(state, {last_user}).
@@ -17,35 +16,32 @@
 %%% api
 %%%===================================================================
 
-start_link() -> gen_server:start_link(?SERVER_NAME, ?MODULE, [], []).
+start_link() -> gen_heap:start_link(?SERVER_NAME, ?MODULE, []).
 
-generate_jobs(Count) -> gen_server:call(?SERVER_NAME, {generate_jobs, Count}, infinity).
+pull(Count) -> gen_heap:pull(?SERVER_NAME, Count).
+
+push(Items) -> gen_heap:push(?SERVER_NAME, Items).
 
 %%%===================================================================
 %%% behaviour
 %%%===================================================================
 
 init([]) ->
+  MinSize = 10000,
+  NormalSize = 50000,
+  MaxSize = infinity,
   NewState = #state{last_user = 0},
-  {ok, NewState}.
+  {ok, {MinSize, NormalSize, MaxSize}, NewState}.
 
-handle_call({generate_jobs, Count}, _From, #state{last_user = LastUser} = State
-) ->
-  lager:debug("generate_jobs ~B", [Count]),
-
+pull_up(Count, #state{last_user = LastUser} = State) ->
+  lager:debug("pull_up ~B", [Count]),
   {NewLastUser, Jobs} = generate_jobs(LastUser, Count),
   NewState = State#state{last_user = NewLastUser},
-  {reply, {ok, Jobs}, NewState};
+  {ok, Jobs, NewState}.
 
-handle_call(_Request, _From, State) -> {reply, ok, State}.
-
-handle_cast(_Request, State) -> {noreply, State}.
-
-handle_info(_Info, State) -> {noreply, State}.
-
-terminate(_Reason, _State) -> ok.
-
-code_change(_OldVsn, State, _Extra) -> {ok, State}.
+push_up(_Items, State) ->
+  lager:warning("Unexpected push_up in heap"),
+  {ok, State}.
 
 %%%===================================================================
 %%% internal
@@ -53,9 +49,11 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
 generate_jobs(LastUser, Count) -> generate_jobs(LastUser, Count, []).
 
-generate_jobs(LastUser, 0, Acc) -> {LastUser, Acc};
+generate_jobs(LastUser, 0, Acc) ->
+  ResultJobs = lists:reverse(Acc),
+  {LastUser, ResultJobs};
 
 generate_jobs(LastUser, Count, Acc) ->
-  NewLastUser = LastUser + ?FILTER_USERS_SIZE,
+  NewLastUser = LastUser + 1000,
   Job = {filter_users, [lists:seq(LastUser + 1, NewLastUser)]},
   generate_jobs(NewLastUser, Count - 1, [Job | Acc]).

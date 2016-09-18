@@ -23,19 +23,14 @@ init([]) ->
 
   Specifications = [
     #{
-      id => workers,
-      start => {workers_supervisor, start_link, []},
-      type => supervisor
-    },
-    #{
       id => root_heap,
       start => {root_heap_server, start_link, []},
       type => worker
     },
     #{
-      id => heap,
-      start => {heap_server, start_link, [fun root_heap_server:generate_jobs/1]},
-      type => worker
+      id => workers,
+      start => {workers_supervisor, start_link, []},
+      type => supervisor
     }
   ],
 

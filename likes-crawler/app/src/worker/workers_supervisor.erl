@@ -14,7 +14,7 @@
 
 start_link() ->
   {ok, Pid} = supervisor:start_link({local, ?MODULE}, ?MODULE, []),
-  set_workers_count(1),
+  set_workers_count(100),
   {ok, Pid}.
 
 set_workers_count(Count) ->
@@ -27,10 +27,12 @@ set_workers_count(Count, CurrentCount, _Pids) when Count =:= CurrentCount ->
 
 set_workers_count(Count, CurrentCount, _Pids) when Count >= CurrentCount ->
   {ok, _Pid} = supervisor:start_child(?MODULE, []),
+  timer:sleep(2000),
   set_workers_count(Count, CurrentCount + 1, [_Pid | _Pids]);
 
 set_workers_count(Count, CurrentCount, [Pid | Pids]) when Count =< CurrentCount ->
   {ok, _Pid} = supervisor:terminate_child(?MODULE, Pid),
+  timer:sleep(2000),
   set_workers_count(Count, CurrentCount - 1, Pids).
 
 %%%===================================================================
