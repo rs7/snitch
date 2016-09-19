@@ -1,4 +1,4 @@
--module(connection_server).
+-module(connection).
 
 -behaviour(gen_server).
 
@@ -118,7 +118,7 @@ handle_info(
 ) ->
   {{RequestPid, RequestRef}, NewRequestsInProgress} = maps:take(StreamRef, RequestsInProgress),
 
-  request_server:error(RequestPid, RequestRef, {gun_stream_error, Reason}),
+  request:error(RequestPid, RequestRef, {gun_stream_error, Reason}),
 
   NewState = State#state{requests_in_progress = NewRequestsInProgress},
   {noreply, NewState};
@@ -132,7 +132,7 @@ handle_info(
   #state{gun_connection_pid = GunConnectionPid, requests_in_progress = RequestsInProgress} = State
 ) ->
   {RequestPid, RequestRef} = maps:get(StreamRef, RequestsInProgress),
-  request_server:status(RequestPid, RequestRef, Status),
+  request:status(RequestPid, RequestRef, Status),
   {noreply, State};
 
 handle_info(
@@ -140,8 +140,8 @@ handle_info(
   #state{gun_connection_pid = GunConnectionPid, requests_in_progress = RequestsInProgress} = State
 ) ->
   {{RequestPid, RequestRef}, NewRequestsInProgress} = maps:take(StreamRef, RequestsInProgress),
-  request_server:status(RequestPid, RequestRef, Status),
-  request_server:fin(RequestPid, RequestRef),
+  request:status(RequestPid, RequestRef, Status),
+  request:fin(RequestPid, RequestRef),
   NewState = State#state{requests_in_progress = NewRequestsInProgress},
   {noreply, NewState};
 
@@ -154,7 +154,7 @@ handle_info(
   #state{gun_connection_pid = GunConnectionPid, requests_in_progress = RequestsInProgress} = State
 ) ->
   {RequestPid, RequestRef} = maps:get(StreamRef, RequestsInProgress),
-  request_server:data(RequestPid, RequestRef, Data),
+  request:data(RequestPid, RequestRef, Data),
   {noreply, State};
 
 handle_info(
@@ -162,8 +162,8 @@ handle_info(
   #state{gun_connection_pid = GunConnectionPid, requests_in_progress = RequestsInProgress} = State
 ) ->
   {{RequestPid, RequestRef}, NewRequestsInProgress} = maps:take(StreamRef, RequestsInProgress),
-  request_server:data(RequestPid, RequestRef, Data),
-  request_server:fin(RequestPid, RequestRef),
+  request:data(RequestPid, RequestRef, Data),
+  request:fin(RequestPid, RequestRef),
   NewState = State#state{requests_in_progress = NewRequestsInProgress},
   {noreply, NewState};
 
@@ -216,7 +216,7 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%%===================================================================
 
 run_block(GunConnectionPid, RequesterPid) ->
-  {ok, RequestInfos} = requester_server:reserve(RequesterPid, ?REQUEST_COUNT_BY_CONNECTION),
+  {ok, RequestInfos} = requester:reserve(RequesterPid, ?REQUEST_COUNT_BY_CONNECTION),
 
   case length(RequestInfos) of
     0 ->
@@ -250,7 +250,7 @@ run_one(GunConnectionPid, RequesterPid, {RequestRef, RequestData}) ->
   run_request_server(RequesterPid, RequestRef, StreamRef).
 
 run_request_server(RequesterPid, RequestRef, StreamRef) ->
-  {ok, RequestPid} = request_server:start_link(RequesterPid, RequestRef),
+  {ok, RequestPid} = request:start_link(RequesterPid, RequestRef),
   {StreamRef, {RequestPid, RequestRef}}.
 
 %%%===================================================================
@@ -260,5 +260,5 @@ run_request_server(RequesterPid, RequestRef, StreamRef) ->
 requests_in_progress_error(RequestsInProgress, _Reason) when map_size(RequestsInProgress) =:= 0 -> ok;
 
 requests_in_progress_error(RequestsInProgress, Reason) -> [
-  request_server:error(RequestPid, RequestRef, Reason) || {RequestPid, RequestRef} <- maps:values(RequestsInProgress)
+  request:error(RequestPid, RequestRef, Reason) || {RequestPid, RequestRef} <- maps:values(RequestsInProgress)
 ].

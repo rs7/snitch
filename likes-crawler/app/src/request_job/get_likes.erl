@@ -24,7 +24,7 @@ response({response, #{<<"items">> := Likers}}, [OwnerId, PhotoId, _Offset]) ->
   [
     save([Liker, OwnerId, PhotoId])
     ||
-    Liker <- Likers
+    Liker <- Likers, Liker =:= 1
   ],
   [].
 
@@ -32,5 +32,5 @@ response({response, #{<<"items">> := Likers}}, [OwnerId, PhotoId, _Offset]) ->
 %%% internal
 %%%===================================================================
 
-save(_) -> ok.
-%save([Liker, OwnerId, PhotoId]) -> lager:info("id~B photo~B_~B", [Liker, OwnerId, PhotoId]).
+%save(_) -> ok.
+save([Liker, OwnerId, PhotoId]) -> lager:info("id~B photo~B_~B", [Liker, OwnerId, PhotoId]).

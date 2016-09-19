@@ -1,4 +1,4 @@
--module(request_server).
+-module(request).
 
 -behaviour(gen_server).
 
@@ -72,19 +72,19 @@ handle_cast(
     {error, Reason} -> {retry, {decode_error, Reason}}
   end,
 
-  requester_server:release(RequesterPid, RequestRef, Result),
+  requester:release(RequesterPid, RequestRef, Result),
   {stop, normal, State};
 
 handle_cast(
   {fin, RequestRef}, #state{request_ref = RequestRef, requester_pid = RequesterPid, status = Status} = State
 ) ->
   Result = {retry, {http_status_error, Status}},
-  requester_server:release(RequesterPid, RequestRef, Result),
+  requester:release(RequesterPid, RequestRef, Result),
   {stop, normal, State};
 
 handle_cast({error, RequestRef, Reason}, #state{requester_pid = RequesterPid, request_ref = RequestRef} = State) ->
   Result = {retry, Reason},
-  requester_server:release(RequesterPid, RequestRef, Result),
+  requester:release(RequesterPid, RequestRef, Result),
   {stop, normal, State};
 
 handle_cast(_Request, State) -> {noreply, State}.

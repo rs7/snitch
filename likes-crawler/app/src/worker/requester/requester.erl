@@ -1,4 +1,4 @@
--module(requester_server).
+-module(requester).
 
 -behaviour(gen_server).
 
@@ -9,7 +9,7 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 -record(state, {
-  heap_pid,
+  heap_ref,
   reserve = #{}
 }).
 
@@ -35,32 +35,27 @@ init([]) -> {ok, #state{}}.
 %%% set_coworkers
 %%%===================================================================
 
-handle_call(
-  {set_coworkers, [HeapPid]}, _From,
-  #state{heap_pid = undefined} = State
-) ->
-  NewState = State#state{heap_pid = HeapPid},
+handle_call({set_coworkers, [HeapRef]}, _From, State) ->
+  NewState = State#state{heap_ref = HeapRef},
   {reply, ok, NewState};
 
 %%%===================================================================
 %%% reserve
 %%%===================================================================
 
-handle_call({reserve, RequestCount}, _From, #state{heap_pid = HeapPid, reserve = Reserve} = State) ->
+handle_call({reserve, RequestCount}, _From, #state{heap_ref = HeapRef, reserve = Reserve} = State) ->
 
-  {ok, ReserveJobs} = child_heap_server:pull(HeapPid, RequestCount),
+  {ok, ReserveJobs} = gen_heap:pull(HeapRef, RequestCount),
 
-  RequestDataItems = [Type:request(Args) || {Type, Args} <- ReserveJobs],
+  RequestDataItems = [Type:request(Context) || {Type, Context} <- ReserveJobs],
 
   RequestRefs = [make_ref() || _ <- RequestDataItems],
 
-  NewReserve = maps:from_list(lists:zip(RequestRefs, ReserveJobs)),
-
   RequestInfos = lists:zip(RequestRefs, RequestDataItems),
 
-  NewState = State#state{
-    reserve = maps:merge(Reserve, NewReserve)
-  },
+  NewReserve = maps:merge(Reserve, maps:from_list(lists:zip(RequestRefs, ReserveJobs))),
+
+  NewState = State#state{reserve = NewReserve},
   {reply, {ok, RequestInfos}, NewState};
 
 %%%===================================================================
@@ -71,29 +66,27 @@ handle_call(_Request, _From, State) -> {reply, ok, State}.
 %%% release
 %%%===================================================================
 
-handle_cast({release, RequestRef, {result, Result}}, #state{heap_pid = HeapPid, reserve = Reserve} = State) ->
-  {{Type, Args}, NewReserve} = maps:take(RequestRef, Reserve),
+handle_cast({release, RequestRef, {result, Result}}, #state{heap_ref = HeapRef, reserve = Reserve} = State) ->
+  {{Type, Context}, NewReserve} = maps:take(RequestRef, Reserve),
 
-  ResultJobs = Type:response(Result, Args),
+  spawn_link(
+    fun() ->
+      %lager:debug("~p", [{Type, Context}]),
+      gen_heap:push(HeapRef, Type:response(Result, Context))
+    end
+  ),
 
-  push_to_heap(HeapPid, ResultJobs),
-
-  NewState = State#state{
-    reserve = NewReserve
-  },
+  NewState = State#state{reserve = NewReserve},
   {noreply, NewState};
 
-
-handle_cast({release, RequestRef, {retry, Reason}}, #state{heap_pid = HeapPid, reserve = Reserve} = State) ->
+handle_cast({release, RequestRef, {retry, Reason}}, #state{heap_ref = HeapRef, reserve = Reserve} = State) ->
   {RetryJob, NewReserve} = maps:take(RequestRef, Reserve),
 
-  lager:warning("retry ~p ~p", [RetryJob, Reason]),
+  lager:warning("retry ~p ~p", [Reason, RetryJob]),
 
-  child_heap_server:push(HeapPid, [RetryJob]),
+  gen_heap:push(HeapRef, [RetryJob]),
 
-  NewState = State#state{
-    reserve = NewReserve
-  },
+  NewState = State#state{reserve = NewReserve},
   {noreply, NewState};
 
 %%%===================================================================
@@ -105,10 +98,3 @@ handle_info(_Info, State) -> {noreply, State}.
 terminate(_Reason, _State) -> ok.
 
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
-
-%%%===================================================================
-%%% internal
-%%%===================================================================
-
-push_to_heap(_HeapPid, []) -> ok;
-push_to_heap(HeapPid, ResultJobs) -> child_heap_server:push(HeapPid, ResultJobs).

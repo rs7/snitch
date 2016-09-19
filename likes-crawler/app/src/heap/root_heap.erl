@@ -1,4 +1,4 @@
--module(root_heap_server).
+-module(root_heap).
 
 -behaviour(gen_heap).
 
@@ -6,8 +6,9 @@
 -export([start_link/0, pull/1, push/1]).
 
 %%% behaviour
--export([init/1, pull_up/2, push_up/2]).
+-export([init/1, pull_from_up_level/2, push_to_up_level/2]).
 
+-define(FILTER_USERS_LIST_LENGTH, 1000).
 -define(SERVER_NAME, {global, ?MODULE}).
 
 -record(state, {last_user}).
@@ -27,21 +28,18 @@ push(Items) -> gen_heap:push(?SERVER_NAME, Items).
 %%%===================================================================
 
 init([]) ->
-  MinSize = 10000,
-  NormalSize = 50000,
+  MinSize = 5000,
+  NormalSize = 20000,
   MaxSize = infinity,
   NewState = #state{last_user = 0},
   {ok, {MinSize, NormalSize, MaxSize}, NewState}.
 
-pull_up(Count, #state{last_user = LastUser} = State) ->
-  lager:debug("pull_up ~B", [Count]),
+pull_from_up_level(Count, #state{last_user = LastUser} = State) ->
   {NewLastUser, Jobs} = generate_jobs(LastUser, Count),
   NewState = State#state{last_user = NewLastUser},
   {ok, Jobs, NewState}.
 
-push_up(_Items, State) ->
-  lager:warning("Unexpected push_up in heap"),
-  {ok, State}.
+push_to_up_level(_Items, _State) -> erlang:error("Unexpected push_to_up_level in root_heap").
 
 %%%===================================================================
 %%% internal
@@ -54,6 +52,6 @@ generate_jobs(LastUser, 0, Acc) ->
   {LastUser, ResultJobs};
 
 generate_jobs(LastUser, Count, Acc) ->
-  NewLastUser = LastUser + 1000,
+  NewLastUser = LastUser + ?FILTER_USERS_LIST_LENGTH,
   Job = {filter_users, [lists:seq(LastUser + 1, NewLastUser)]},
   generate_jobs(NewLastUser, Count - 1, [Job | Acc]).

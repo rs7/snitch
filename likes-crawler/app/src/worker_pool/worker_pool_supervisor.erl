@@ -1,4 +1,4 @@
--module(likes_supervisor).
+-module(worker_pool_supervisor).
 
 -behaviour(supervisor).
 
@@ -19,27 +19,17 @@ start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 %%%===================================================================
 
 init([]) ->
-  Strategy = #{strategy => one_for_all, intensity => 0, period => 1},
+  Strategy = #{strategy => one_for_all, intensity => 1, period => 5},
 
   Specifications = [
     #{
-      id => root_heap,
-      start => {root_heap, start_link, []},
-      type => worker
-    },
-    #{
-      id => local_heap,
-      start => {heap, start_link, [{local, local_heap}, {global, root_heap}, {5000, 10000, 100000}]},
-      type => worker
-    },
-    #{
-      id => worker_pool,
-      start => {worker_pool, start_link, []},
+      id => workers_supervisor,
+      start => {worker_pool_workers_supervisor, start_link, []},
       type => supervisor
     },
     #{
-      id => stat,
-      start => {stat, start_link, []},
+      id => controller,
+      start => {worker_pool_controller, start_link, []},
       type => worker
     }
   ],

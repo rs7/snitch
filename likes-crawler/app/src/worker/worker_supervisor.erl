@@ -21,8 +21,8 @@ start_link() ->
     {heap, HeapPid, _, _}
   ] = supervisor:which_children(SupervisorPid),
 
-  ok = requester_server:set_coworkers(RequesterPid, [HeapPid]),
-  ok = connection_server:set_coworkers(ConnectionPid, [RequesterPid]),
+  ok = requester:set_coworkers(RequesterPid, [HeapPid]),
+  ok = connection:set_coworkers(ConnectionPid, [RequesterPid]),
 
   {ok, SupervisorPid}.
 
@@ -36,17 +36,17 @@ init([]) ->
   Specifications = [
     #{
       id => heap,
-      start => {child_heap_server, start_link, [{global, root_heap_server}, {500, 1500, 3000}]},
+      start => {heap, start_link, [local_heap, {100, 300, 600}]},
       type => worker
     },
     #{
       id => requester,
-      start => {requester_server, start_link, []},
+      start => {requester, start_link, []},
       type => worker
     },
     #{
       id => connection,
-      start => {connection_server, start_link, []},
+      start => {connection, start_link, []},
       type => worker
     }
   ],
