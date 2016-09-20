@@ -16,7 +16,7 @@ request([UserList]) ->
     }
   }.
 
-response({response, Response}, _RequestContext) ->
+response({response, Response}, _Context) ->
   [
     {get_albums, [maps:get(<<"id">>, User)]}
     ||

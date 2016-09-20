@@ -9,4 +9,4 @@
 
 start_link() -> worker_pool_supervisor:start_link().
 
-get_workers_count() -> worker_pool_workers_supervisor:get_workers_count().
+get_workers_count() -> worker_pool_controller:get_workers_count().

@@ -3,50 +3,40 @@
 -behaviour(supervisor).
 
 %%% api
--export([start_link/0]).
+-export([start_link/1]).
 
 %%% behaviour
 -export([init/1]).
+
+-include("./worker.hrl").
 
 %%%===================================================================
 %%% api
 %%%===================================================================
 
-start_link() ->
-  {ok, SupervisorPid} = supervisor:start_link(?MODULE, []),
-
-  [
-    {connection, ConnectionPid, _, _},
-    {requester, RequesterPid, _, _},
-    {heap, HeapPid, _, _}
-  ] = supervisor:which_children(SupervisorPid),
-
-  ok = requester:set_coworkers(RequesterPid, [HeapPid]),
-  ok = connection:set_coworkers(ConnectionPid, [RequesterPid]),
-
-  {ok, SupervisorPid}.
+start_link(WorkerId) -> supervisor:start_link(?WORKER_PART_NAME(?MODULE, WorkerId), ?MODULE, WorkerId).
 
 %%%===================================================================
 %%% behaviour
 %%%===================================================================
 
-init([]) ->
+init(WorkerId) ->
   Strategy = #{strategy => one_for_all, intensity => 0, period => 1},
 
   Specifications = [
     #{
       id => heap,
-      start => {heap, start_link, [local_heap, {100, 300, 600}]},
+      start => {heap, start_link, [?WORKER_PART_NAME(heap, WorkerId), local_heap, {100, 300, 600}]},
       type => worker
     },
     #{
       id => requester,
-      start => {requester, start_link, []},
+      start => {requester, start_link, [WorkerId]},
       type => worker
     },
     #{
       id => connection,
-      start => {connection, start_link, []},
+      start => {connection, start_link, [WorkerId]},
       type => worker
     }
   ],

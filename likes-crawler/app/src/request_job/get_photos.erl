@@ -20,8 +20,8 @@ request([AlbumOwnerId, AlbumId, PhotosOffset]) ->
     }
   }.
 
-response({response, #{<<"items">> := Items}}, _RequestContext) ->
-  util:flatten(
+response({response, #{<<"items">> := Items}}, _Context) ->
+  lists:append(
     [
       [
         {get_likes, [PhotoOwnerId, PhotoId, LikesOffset]}

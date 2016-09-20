@@ -9,7 +9,8 @@
       kernel,
       stdlib,
       gun,
-      lager
+      lager,
+      gproc
     ]},
     {env, []},
     {modules, []},

@@ -29,7 +29,7 @@ init([]) ->
     },
     #{
       id => local_heap,
-      start => {heap, start_link, [{local, local_heap}, {global, root_heap}, {5000, 10000, 100000}]},
+      start => {heap, start_link, [{local, local_heap}, {global, root_heap}, {5000, 50000, 100000}]},
       type => worker
     },
     #{

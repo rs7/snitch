@@ -3,10 +3,14 @@
 -behaviour(gen_server).
 
 %%% api
--export([start_link/0, set_coworkers/2, reserve/2, release/3]).
+-export([start_link/1, reserve/2, release/3]).
 
 %%% behaviour
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+
+-include("../worker.hrl").
+
+-define(SERVER_NAME(WorkerId), ?WORKER_PART_NAME(?MODULE, WorkerId)).
 
 -record(state, {
   heap_ref,
@@ -17,27 +21,19 @@
 %%% api
 %%%===================================================================
 
-start_link() -> gen_server:start_link(?MODULE, [], []).
+start_link(WorkerId) -> gen_server:start_link(?SERVER_NAME(WorkerId), ?MODULE, ?WORKER_PART_NAME(heap, WorkerId), []).
 
-set_coworkers(RequesterPid, Coworkers) -> gen_server:call(RequesterPid, {set_coworkers, Coworkers}).
+reserve(WorkerId, RequestCount) -> gen_server:call(?SERVER_NAME(WorkerId), {reserve, RequestCount}, infinity).
 
-reserve(RequesterPid, RequestCount) -> gen_server:call(RequesterPid, {reserve, RequestCount}, infinity).
-
-release(RequesterPid, RequestRef, Result) -> gen_server:cast(RequesterPid, {release, RequestRef, Result}).
+release(WorkerId, RequestRef, Result) -> gen_server:cast(?SERVER_NAME(WorkerId), {release, RequestRef, Result}).
 
 %%%===================================================================
 %%% behaviour
 %%%===================================================================
 
-init([]) -> {ok, #state{}}.
-
-%%%===================================================================
-%%% set_coworkers
-%%%===================================================================
-
-handle_call({set_coworkers, [HeapRef]}, _From, State) ->
-  NewState = State#state{heap_ref = HeapRef},
-  {reply, ok, NewState};
+init(HeapRef) ->
+  NewState = #state{heap_ref = HeapRef},
+  {ok, NewState}.
 
 %%%===================================================================
 %%% reserve
@@ -71,7 +67,6 @@ handle_cast({release, RequestRef, {result, Result}}, #state{heap_ref = HeapRef, 
 
   spawn_link(
     fun() ->
-      %lager:debug("~p", [{Type, Context}]),
       gen_heap:push(HeapRef, Type:response(Result, Context))
     end
   ),

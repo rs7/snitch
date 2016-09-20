@@ -17,8 +17,8 @@ request([OwnerId]) ->
     }
   }.
 
-response({response, #{<<"items">> := AlbumItems}}, _RequestContext) ->
-  util:flatten(
+response({response, #{<<"items">> := AlbumItems}}, _Context) ->
+  lists:append(
     [
       [
         {get_photos, [AlbumOwnerId, AlbumId, PhotosOffset]}

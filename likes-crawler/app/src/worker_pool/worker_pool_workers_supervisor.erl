@@ -3,10 +3,12 @@
 -behaviour(supervisor).
 
 %%% api
--export([start_link/0, get_workers_pids/0, start_child/0, terminate_child/1, get_workers_count/0]).
+-export([start_link/0, start_child/1, terminate_child/1]).
 
 %%% behaviour
 -export([init/1]).
+
+-include("../worker/worker.hrl").
 
 %%%===================================================================
 %%% api
@@ -14,14 +16,11 @@
 
 start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
-get_workers_pids() ->
-  [Pid || {_, Pid, _, _} <- supervisor:which_children(?MODULE)].
+start_child(WorkerId) -> supervisor:start_child(?MODULE, [WorkerId]).
 
-start_child() -> supervisor:start_child(?MODULE, []).
-
-terminate_child(Pid) -> supervisor:terminate_child(?MODULE, Pid).
-
-get_workers_count() -> maps:get(workers, maps:from_list(supervisor:count_children(?MODULE))).
+terminate_child(WorkerId) ->
+  Pid = gproc:get_value(?WORKER_PART_KEY(worker_supervisor, WorkerId), whereis(?MODULE)), %TODO я не уверен, что это сработает
+  supervisor:terminate_child(?MODULE, Pid).
 
 %%%===================================================================
 %%% behaviour
