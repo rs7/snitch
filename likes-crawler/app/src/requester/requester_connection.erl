@@ -1,4 +1,4 @@
--module(connection).
+-module(requester_connection).
 
 -behaviour(gen_server).
 
@@ -8,12 +8,12 @@
 %%% behaviour
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
--include("../worker.hrl").
+-include("../util/identified_name.hrl").
 
 -define(REQUEST_COUNT_BY_CONNECTION, 100).
 
 -record(state, {
-  worker_id,
+  requester_ref,
   gun_connection_pid,
   gun_connection_monitor_ref,
   requests_in_progress = #{}
@@ -23,20 +23,19 @@
 %%% api
 %%%===================================================================
 
-start_link(WorkerId) ->
-  gen_server:start_link(?WORKER_PART_NAME(?MODULE, WorkerId), ?MODULE, WorkerId, []).
+start_link(RequesterRef) -> gen_server:start_link(?IDENTIFIED_NAME(?MODULE, RequesterRef), ?MODULE, RequesterRef, []).
 
 %%%===================================================================
 %%% behaviour
 %%%===================================================================
 
-init(WorkerId) ->
+init(RequesterRef) ->
   {ok, GunConnectionPid} = connection_lib:open(),
 
   GunConnectionMonitorRef = monitor(process, GunConnectionPid),
 
   NewState = #state{
-    worker_id = WorkerId,
+    requester_ref = RequesterRef,
     gun_connection_pid = GunConnectionPid,
     gun_connection_monitor_ref = GunConnectionMonitorRef
   },
@@ -57,7 +56,7 @@ handle_info(
     requests_in_progress = RequestsInProgress
   } = State
 ) ->
-  requests_in_progress_error(RequestsInProgress, {gun_DOWN, Reason}),
+  requests_in_progress_error(RequestsInProgress, {gun_connection_down, Reason}),
   NewState = State#state{
     gun_connection_pid = undefined, gun_connection_monitor_ref = undefined, requests_in_progress = #{}
   },
@@ -82,13 +81,8 @@ handle_info(
 handle_info(
   {gun_down, GunConnectionPid, http, Reason, _KilledStreams, _UnprocessedStreams},
   #state{gun_connection_pid = GunConnectionPid, requests_in_progress = RequestsInProgress} = State
-) ->
-  if
-    map_size(RequestsInProgress) =/= 0 ->
-      lager:warning("unexpected gun_down ~p", [Reason]),
-      requests_in_progress_error(RequestsInProgress, {gun_down, Reason});
-    true -> ok
-  end,
+) when map_size(RequestsInProgress) =/= 0 ->
+  requests_in_progress_error(RequestsInProgress, {gun_down, Reason}),
   NewState = State#state{requests_in_progress = #{}},
   {noreply, NewState};
 
@@ -98,9 +92,9 @@ handle_info(
 
 handle_info(
   {gun_up, GunConnectionPid, http},
-  #state{gun_connection_pid = GunConnectionPid, worker_id = WorkerId} = State
+  #state{gun_connection_pid = GunConnectionPid, requester_ref = RequesterRef} = State
 ) ->
-  RequestsInProgress = maps:from_list(run_block(GunConnectionPid, WorkerId)),
+  RequestsInProgress = maps:from_list(run_block(GunConnectionPid, RequesterRef, ?REQUEST_COUNT_BY_CONNECTION)),
   NewState = State#state{requests_in_progress = RequestsInProgress},
   {noreply, NewState};
 
@@ -193,42 +187,32 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%% internal
 %%%===================================================================
 
-run_block(GunConnectionPid, WorkerId) ->
-  {ok, RequestInfos} = requester:reserve(WorkerId, ?REQUEST_COUNT_BY_CONNECTION),
+run_block(GunConnectionPid, RequesterRef, Count) ->
+  {ok, RequestInfos} = requester_controller:reserve(RequesterRef, Count),
 
-  case length(RequestInfos) of
-    0 ->
-      timer:sleep(100),
-      run_block(GunConnectionPid, WorkerId);
+  run_requests(GunConnectionPid, RequesterRef, RequestInfos).
 
-    ?REQUEST_COUNT_BY_CONNECTION -> run_requests(GunConnectionPid, WorkerId, RequestInfos);
+run_requests(_GunConnectionPid, _RequesterRef, []) -> [];
 
-    Count ->
-      lager:warning("short request block (size: ~B)", [Count]),
-      run_requests(GunConnectionPid, WorkerId, RequestInfos)
-  end.
+run_requests(GunConnectionPid, RequesterRef, [RequestInfo]) ->
+  [run_one(GunConnectionPid, RequesterRef, RequestInfo, close)];
 
-run_requests(_GunConnectionPid, _WorkerId, []) -> [];
-
-run_requests(GunConnectionPid, WorkerId, [RequestInfo]) ->
-  [run_one(GunConnectionPid, WorkerId, RequestInfo, close)];
-
-run_requests(GunConnectionPid, WorkerId, [RequestInfo | RemainingRequestInfos]) -> [
-  run_one(GunConnectionPid, WorkerId, RequestInfo)
+run_requests(GunConnectionPid, RequesterRef, [RequestInfo | RemainingRequestInfos]) -> [
+  run_one(GunConnectionPid, RequesterRef, RequestInfo)
   |
-  run_requests(GunConnectionPid, WorkerId, RemainingRequestInfos)
+  run_requests(GunConnectionPid, RequesterRef, RemainingRequestInfos)
 ].
 
-run_one(GunConnectionPid, WorkerId, {RequestRef, RequestData}, close) ->
+run_one(GunConnectionPid, RequesterRef, {RequestRef, RequestData}, close) ->
   StreamRef = connection_lib:request(GunConnectionPid, RequestData, close),
-  run_request_server(WorkerId, RequestRef, StreamRef).
+  run_request_server(RequesterRef, RequestRef, StreamRef).
 
-run_one(GunConnectionPid, WorkerId, {RequestRef, RequestData}) ->
+run_one(GunConnectionPid, RequesterRef, {RequestRef, RequestData}) ->
   StreamRef = connection_lib:request(GunConnectionPid, RequestData),
-  run_request_server(WorkerId, RequestRef, StreamRef).
+  run_request_server(RequesterRef, RequestRef, StreamRef).
 
-run_request_server(WorkerId, RequestRef, StreamRef) ->
-  {ok, RequestPid} = request:start_link(WorkerId, RequestRef),
+run_request_server(RequesterRef, RequestRef, StreamRef) ->
+  {ok, RequestPid} = request:start_link(RequesterRef, RequestRef),
   {StreamRef, {RequestPid, RequestRef}}.
 
 %%%===================================================================

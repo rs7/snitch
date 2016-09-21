@@ -1,10 +1,12 @@
--module(worker).
+-module(gen_job).
 
 %%% api
--export([start_link/1]).
+-export([behaviour_info/1]).
 
 %%%===================================================================
 %%% api
 %%%===================================================================
 
-start_link(WorkerId) -> worker_supervisor:start_link(WorkerId).
+behaviour_info(callbacks) -> [{process, 1}];
+
+behaviour_info(_Other) -> undefined.

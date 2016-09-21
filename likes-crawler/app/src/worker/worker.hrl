@@ -1,2 +1,0 @@
--define(WORKER_PART_KEY(PartType, WorkerId), {n, l, {PartType, WorkerId}}).
--define(WORKER_PART_NAME(PartType, WorkerId), {via, gproc, ?WORKER_PART_KEY(PartType, WorkerId)}).

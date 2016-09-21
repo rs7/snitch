@@ -1,16 +1,16 @@
--module(requester).
+-module(requester_controller).
 
 -behaviour(gen_server).
 
 %%% api
--export([start_link/1, reserve/2, release/3]).
+-export([start_link/2, reserve/2, release/3]).
 
 %%% behaviour
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
--include("../worker.hrl").
+-include("../util/identified_name.hrl").
 
--define(SERVER_NAME(WorkerId), ?WORKER_PART_NAME(?MODULE, WorkerId)).
+-define(SERVER_NAME(RequesterRef), ?IDENTIFIED_NAME(?MODULE, RequesterRef)).
 
 -record(state, {
   heap_ref,
@@ -21,11 +21,11 @@
 %%% api
 %%%===================================================================
 
-start_link(WorkerId) -> gen_server:start_link(?SERVER_NAME(WorkerId), ?MODULE, ?WORKER_PART_NAME(heap, WorkerId), []).
+start_link(RequesterRef, HeapRef) -> gen_server:start_link(?SERVER_NAME(RequesterRef), ?MODULE, HeapRef, []).
 
-reserve(WorkerId, RequestCount) -> gen_server:call(?SERVER_NAME(WorkerId), {reserve, RequestCount}, infinity).
+reserve(RequesterRef, RequestCount) -> gen_server:call(?SERVER_NAME(RequesterRef), {reserve, RequestCount}, infinity).
 
-release(WorkerId, RequestRef, Result) -> gen_server:cast(?SERVER_NAME(WorkerId), {release, RequestRef, Result}).
+release(RequesterRef, RequestRef, Result) -> gen_server:cast(?SERVER_NAME(RequesterRef), {release, RequestRef, Result}).
 
 %%%===================================================================
 %%% behaviour

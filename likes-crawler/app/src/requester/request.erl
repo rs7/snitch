@@ -9,7 +9,7 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 -record(state, {
-  requester_pid,
+  requester_ref,
   request_ref,
   status,
   data
@@ -19,7 +19,7 @@
 %%% api
 %%%===================================================================
 
-start_link(RequesterPid, RequestRef) -> gen_server:start_link(?MODULE, {RequesterPid, RequestRef}, []).
+start_link(RequesterRef, RequestRef) -> gen_server:start_link(?MODULE, {RequesterRef, RequestRef}, []).
 
 status(RequestPid, RequestRef, Status) -> gen_server:cast(RequestPid, {status, RequestRef, Status}).
 
@@ -33,11 +33,12 @@ error(RequestPid, RequestRef, Reason) -> gen_server:cast(RequestPid, {error, Req
 %%% behaviour
 %%%===================================================================
 
-init({RequesterPid, RequestRef}) ->
-  {ok, #state{
-    requester_pid = RequesterPid,
+init({RequesterRef, RequestRef}) ->
+  NewState = #state{
+    requester_ref = RequesterRef,
     request_ref = RequestRef
-  }}.
+  },
+  {ok, NewState}.
 
 handle_call(_Request, _From, State) -> {reply, ok, State}.
 
@@ -57,7 +58,7 @@ handle_cast({data, RequestRef, _Data}, #state{request_ref = RequestRef, status =
   {noreply, State};
 
 handle_cast(
-  {fin, RequestRef}, #state{request_ref = RequestRef, requester_pid = RequesterPid, status = 200, data = Data} = State
+  {fin, RequestRef}, #state{requester_ref = RequesterRef, request_ref = RequestRef, status = 200, data = Data} = State
 ) ->
 
   Result = case response_lib:decode_body(Data) of
@@ -72,19 +73,19 @@ handle_cast(
     {error, Reason} -> {retry, {decode_error, Reason}}
   end,
 
-  requester:release(RequesterPid, RequestRef, Result),
+  requester_controller:release(RequesterRef, RequestRef, Result),
   {stop, normal, State};
 
 handle_cast(
-  {fin, RequestRef}, #state{request_ref = RequestRef, requester_pid = RequesterPid, status = Status} = State
+  {fin, RequestRef}, #state{requester_ref = RequesterRef, request_ref = RequestRef, status = Status} = State
 ) ->
   Result = {retry, {http_status_error, Status}},
-  requester:release(RequesterPid, RequestRef, Result),
+  requester_controller:release(RequesterRef, RequestRef, Result),
   {stop, normal, State};
 
-handle_cast({error, RequestRef, Reason}, #state{requester_pid = RequesterPid, request_ref = RequestRef} = State) ->
+handle_cast({error, RequestRef, Reason}, #state{requester_ref = RequesterRef, request_ref = RequestRef} = State) ->
   Result = {retry, Reason},
-  requester:release(RequesterPid, RequestRef, Result),
+  requester_controller:release(RequesterRef, RequestRef, Result),
   {stop, normal, State};
 
 handle_cast(_Request, State) -> {noreply, State}.
