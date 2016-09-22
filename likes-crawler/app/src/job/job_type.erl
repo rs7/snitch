@@ -1,4 +1,4 @@
--module(gen_job).
+-module(job_type).
 
 %%% api
 -export([behaviour_info/1]).

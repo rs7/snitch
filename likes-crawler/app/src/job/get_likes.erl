@@ -22,27 +22,7 @@ request([OwnerId, PhotoId, Offset]) ->
 
 response({response, #{<<"items">> := Likers}}, [OwnerId, PhotoId, _Offset]) ->
   [
-    save({Liker, OwnerId, PhotoId})
+    {save_job, {Liker, OwnerId, PhotoId}}
     ||
     Liker <- Likers, Liker =:= 1
-  ],
-  [].
-
-%%%===================================================================
-%%% internal
-%%%===================================================================
-
-save({Liker, OwnerId, PhotoId}) ->
-  {ok, OutputFilename} = application:get_env(output_file),
-  WriteFileResult = file:write_file(OutputFilename, [output_line({Liker, OwnerId, PhotoId}), $\n], [append]),
-  lager:info("id~B photo~B_~B ~p", [Liker, OwnerId, PhotoId, WriteFileResult]).
-
-output_line({Liker, OwnerId, PhotoId}) ->
-  io_lib:format(
-    "<a href=\"http://vk.com/id~B\">id~B</a> "
-    "<a href=\"http://vk.com/id~B\">id~B</a> "
-    "<a href=\"http://vk.com/photo~B_~B\">photo~B_~B</a> "
-    "<br>",
-    [Liker, Liker, OwnerId, OwnerId, OwnerId, PhotoId, OwnerId, PhotoId]
-  ).
-
+  ].

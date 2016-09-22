@@ -1,7 +1,7 @@
 -module(connection_lib).
 
 %%% api
--export([open/0, close/1, request/2, request/3]).
+-export([open/0, close/1, request/2]).
 
 -define(DISABLE_KEEPALIVE, 16#7FFFFFF).
 
@@ -20,9 +20,6 @@ close(GunConnectionPid) -> gun:shutdown(GunConnectionPid).
 
 request(GunConnectionPid, Request) -> request(GunConnectionPid, Request, post, []).
 
-request(GunConnectionPid, Request, close) ->
-  request(GunConnectionPid, Request, post, [{<<"Connection">>, <<"close">>}]).
-
 %%%===================================================================
 %%% internal
 %%%===================================================================
@@ -35,6 +32,7 @@ request(GunConnectionPid, {Method, Params}, get, Headers) ->
   );
 
 request(GunConnectionPid, {Method, Params}, post, Headers) ->
+  lager:debug("request ~p ~p", [Method, Params]),
   gun:post(
     GunConnectionPid,
     request_lib:path(Method),

@@ -3,7 +3,7 @@
 -behaviour(gen_server).
 
 %%% api
--export([start_link/2, reserve/2, release/3]).
+-export([start_link/1, reserve/2, release/3]).
 
 %%% behaviour
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -12,16 +12,13 @@
 
 -define(SERVER_NAME(RequesterRef), ?IDENTIFIED_NAME(?MODULE, RequesterRef)).
 
--record(state, {
-  heap_ref,
-  reserve = #{}
-}).
+-record(state, {reserve = #{}}).
 
 %%%===================================================================
 %%% api
 %%%===================================================================
 
-start_link(RequesterRef, HeapRef) -> gen_server:start_link(?SERVER_NAME(RequesterRef), ?MODULE, HeapRef, []).
+start_link(RequesterRef) -> gen_server:start_link(?SERVER_NAME(RequesterRef), ?MODULE, [], []).
 
 reserve(RequesterRef, RequestCount) -> gen_server:call(?SERVER_NAME(RequesterRef), {reserve, RequestCount}, infinity).
 
@@ -31,28 +28,30 @@ release(RequesterRef, RequestRef, Result) -> gen_server:cast(?SERVER_NAME(Reques
 %%% behaviour
 %%%===================================================================
 
-init(HeapRef) ->
-  NewState = #state{heap_ref = HeapRef},
+init([]) ->
+  NewReserve = #{},
+  NewState = #state{reserve = NewReserve},
   {ok, NewState}.
 
 %%%===================================================================
 %%% reserve
 %%%===================================================================
 
-handle_call({reserve, RequestCount}, _From, #state{heap_ref = HeapRef, reserve = Reserve} = State) ->
+handle_call({reserve, Count}, _From, #state{reserve = Reserve} = State) ->
 
-  {ok, ReserveJobs} = gen_heap:pull(HeapRef, RequestCount),
+  {ok, Items} = call_queue:take(Count),
 
-  RequestDataItems = [Type:request(Context) || {Type, Context} <- ReserveJobs],
+  Result = [{RequestRef, RequestData} || {_Priority, {RequestRef, RequestData, _RequestFrom}} <- Items],
 
-  RequestRefs = [make_ref() || _ <- RequestDataItems],
-
-  RequestInfos = lists:zip(RequestRefs, RequestDataItems),
-
-  NewReserve = maps:merge(Reserve, maps:from_list(lists:zip(RequestRefs, ReserveJobs))),
+  NewReserve = maps:merge(
+    Reserve,
+    maps:from_list(
+      [{RequestRef, {Priority, RequestData, From}} || {Priority, {RequestRef, RequestData, From}} <- Items]
+    )
+  ),
 
   NewState = State#state{reserve = NewReserve},
-  {reply, {ok, RequestInfos}, NewState};
+  {reply, {ok, Result}, NewState};
 
 %%%===================================================================
 
@@ -62,24 +61,24 @@ handle_call(_Request, _From, State) -> {reply, ok, State}.
 %%% release
 %%%===================================================================
 
-handle_cast({release, RequestRef, {result, Result}}, #state{heap_ref = HeapRef, reserve = Reserve} = State) ->
-  {{Type, Context}, NewReserve} = maps:take(RequestRef, Reserve),
+handle_cast({release, RequestRef, {result, Result}}, #state{reserve = Reserve} = State) ->
+  {Item, NewReserve} = maps:take(RequestRef, Reserve),
 
-  spawn_link(
-    fun() ->
-      gen_heap:push(HeapRef, Type:response(Result, Context))
-    end
-  ),
+  {_Priority, _RequestData, RequestFrom} = Item,
+
+  gen_server:reply(RequestFrom, {ok, Result}),
 
   NewState = State#state{reserve = NewReserve},
   {noreply, NewState};
 
-handle_cast({release, RequestRef, {retry, Reason}}, #state{heap_ref = HeapRef, reserve = Reserve} = State) ->
-  {RetryJob, NewReserve} = maps:take(RequestRef, Reserve),
+handle_cast({release, RequestRef, {retry, Reason}}, #state{reserve = Reserve} = State) ->
+  {Item, NewReserve} = maps:take(RequestRef, Reserve),
 
-  lager:warning("retry ~p ~p", [Reason, RetryJob]),
+  lager:warning("retry ~p ~p", [Reason, Item]),
 
-  gen_heap:push(HeapRef, [RetryJob]),
+  {Priority, RequestData, From} = Item,
+
+  call_queue:add(Priority, RequestData, From),
 
   NewState = State#state{reserve = NewReserve},
   {noreply, NewState};

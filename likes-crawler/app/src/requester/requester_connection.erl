@@ -16,7 +16,8 @@
   requester_ref,
   gun_connection_pid,
   gun_connection_monitor_ref,
-  requests_in_progress = #{}
+  requests_in_progress = #{},
+  requests_count_from_up = 0
 }).
 
 %%%===================================================================
@@ -91,11 +92,10 @@ handle_info(
 %%%===================================================================
 
 handle_info(
-  {gun_up, GunConnectionPid, http},
-  #state{gun_connection_pid = GunConnectionPid, requester_ref = RequesterRef} = State
+  {gun_up, GunConnectionPid, http}, #state{gun_connection_pid = GunConnectionPid} = State
 ) ->
-  RequestsInProgress = maps:from_list(run_block(GunConnectionPid, RequesterRef, ?REQUEST_COUNT_BY_CONNECTION)),
-  NewState = State#state{requests_in_progress = RequestsInProgress},
+  self() ! try_run,
+  NewState = State#state{requests_count_from_up = 0},
   {noreply, NewState};
 
 %%%===================================================================
@@ -158,6 +158,33 @@ handle_info(
   {noreply, NewState};
 
 %%%===================================================================
+%%% gun_data
+%%%===================================================================
+
+handle_info(
+  try_run,
+  #state{
+    requester_ref = RequesterRef, gun_connection_pid = GunConnectionPid, requests_in_progress = RequestsInProgress,
+    requests_count_from_up = RequestsCountFromUp
+  } = State
+) when RequestsCountFromUp =/= ?REQUEST_COUNT_BY_CONNECTION ->
+  MaxCount = ?REQUEST_COUNT_BY_CONNECTION - RequestsCountFromUp,
+  NewRequests = run_requests(RequesterRef, GunConnectionPid, MaxCount),
+  NewRequestsInProgress = maps:merge(RequestsInProgress, maps:from_list(NewRequests)),
+  SuccessCount = length(NewRequests),
+  NewRequestsCountFromUp = RequestsCountFromUp + SuccessCount,
+
+  lager:debug("try_run ~B/~B", [SuccessCount, MaxCount]),
+
+  case SuccessCount of
+    MaxCount -> ok;
+    SuccessCount -> erlang:send_after(1000, self(), try_run)
+  end,
+
+  NewState = State#state{requests_in_progress = NewRequestsInProgress, requests_count_from_up = NewRequestsCountFromUp},
+  {noreply, NewState};
+
+%%%===================================================================
 
 handle_info(_Info, State) -> {noreply, State}.
 
@@ -187,25 +214,20 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%% internal
 %%%===================================================================
 
-run_block(GunConnectionPid, RequesterRef, Count) ->
+run_requests(RequesterRef, GunConnectionPid, Count) ->
   {ok, RequestInfos} = requester_controller:reserve(RequesterRef, Count),
+  run_many(GunConnectionPid, RequesterRef, RequestInfos).
 
-  run_requests(GunConnectionPid, RequesterRef, RequestInfos).
+run_many(_GunConnectionPid, _RequesterRef, []) -> [];
 
-run_requests(_GunConnectionPid, _RequesterRef, []) -> [];
+run_many(GunConnectionPid, RequesterRef, [RequestInfo]) ->
+  [run_one(GunConnectionPid, RequesterRef, RequestInfo)];
 
-run_requests(GunConnectionPid, RequesterRef, [RequestInfo]) ->
-  [run_one(GunConnectionPid, RequesterRef, RequestInfo, close)];
-
-run_requests(GunConnectionPid, RequesterRef, [RequestInfo | RemainingRequestInfos]) -> [
+run_many(GunConnectionPid, RequesterRef, [RequestInfo | RemainingRequestInfos]) -> [
   run_one(GunConnectionPid, RequesterRef, RequestInfo)
   |
-  run_requests(GunConnectionPid, RequesterRef, RemainingRequestInfos)
+  run_many(GunConnectionPid, RequesterRef, RemainingRequestInfos)
 ].
-
-run_one(GunConnectionPid, RequesterRef, {RequestRef, RequestData}, close) ->
-  StreamRef = connection_lib:request(GunConnectionPid, RequestData, close),
-  run_request_server(RequesterRef, RequestRef, StreamRef).
 
 run_one(GunConnectionPid, RequesterRef, {RequestRef, RequestData}) ->
   StreamRef = connection_lib:request(GunConnectionPid, RequestData),

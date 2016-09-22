@@ -43,7 +43,7 @@ handle_info(
 
   case ChildJobDataItems of
     [] ->
-      ControllerRef ! {complete, JobRef},
+      util:send(ControllerRef, {complete, JobRef}),
       {noreply, State};
 
     ChildJobDataItems ->
@@ -60,7 +60,7 @@ handle_info(
   NewJobChildren = job_children_list:remove(ChildJobRef, JobChildren),
 
   case job_children_list:is_empty(NewJobChildren) of
-    true -> ControllerRef ! {complete, JobRef};
+    true -> util:send(ControllerRef, {complete, JobRef});
     false -> ok
   end,
 

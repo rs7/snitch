@@ -3,7 +3,7 @@
 -behaviour(supervisor).
 
 %%% api
--export([start_link/2]).
+-export([start_link/1]).
 
 %%% behaviour
 -export([init/1]).
@@ -14,20 +14,20 @@
 %%% api
 %%%===================================================================
 
-start_link(RequesterRef, HeapRef) ->
-  supervisor:start_link(?IDENTIFIED_NAME(?MODULE, RequesterRef), ?MODULE, {RequesterRef, HeapRef}).
+start_link(RequesterRef) ->
+  supervisor:start_link(?IDENTIFIED_NAME(?MODULE, RequesterRef), ?MODULE, RequesterRef).
 
 %%%===================================================================
 %%% behaviour
 %%%===================================================================
 
-init({RequesterRef, HeapRef}) ->
+init(RequesterRef) ->
   Strategy = #{strategy => one_for_all, intensity => 1, period => 5},
 
   Specifications = [
     #{
       id => controller,
-      start => {requester_controller, start_link, [RequesterRef, HeapRef]},
+      start => {requester_controller, start_link, [RequesterRef]},
       type => worker
     },
     #{

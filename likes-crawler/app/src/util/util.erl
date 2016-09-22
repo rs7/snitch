@@ -1,7 +1,7 @@
 -module(util).
 
 %%% api
--export([ceil/1, parallel/2, list_split/2, list_partition/2, get_offsets/2]).
+-export([ceil/1, parallel/2, list_split/2, list_partition/2, get_offsets/2, send/2]).
 
 %%%===================================================================
 %%% api
@@ -37,3 +37,6 @@ list_partition(List, PartSize) ->
 
 get_offsets(From, To) when From > To -> [];
 get_offsets(From, To) -> [From | get_offsets(From + 1000, To)].
+
+send({via, Module, Name}, Info) -> Module:send(Name, Info);
+send(Destination, Info) -> Destination ! Info.

@@ -21,26 +21,28 @@ start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 init([]) ->
   Strategy = #{strategy => one_for_all, intensity => 0, period => 1},
 
+  TestJobData = {request_job, {filter_users, [1,2,3,4,5,6]}},
+
   Specifications = [
     #{
-      id => root_heap,
-      start => {root_heap, start_link, []},
+      id => call_queue,
+      start => {call_queue, start_link, []},
       type => worker
     },
     #{
-      id => local_heap,
-      start => {heap, start_link, [{local, local_heap}, {global, root_heap}, {5000, 50000, 100000}]},
+      id => requester,
+      start => {requester, start_link, [make_ref()]},
       type => worker
     },
     #{
-      id => worker_pool,
-      start => {worker_pool, start_link, []},
+      id => controller,
+      start => {mock_controller, start_link, []},
+      type => worker
+    },
+    #{
+      id => job,
+      start => {job, start_link, [mock_controller, make_ref(), TestJobData]},
       type => supervisor
-    },
-    #{
-      id => stat,
-      start => {stat, start_link, []},
-      type => worker
     }
   ],
 

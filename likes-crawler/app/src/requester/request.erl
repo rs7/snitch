@@ -60,7 +60,6 @@ handle_cast({data, RequestRef, _Data}, #state{request_ref = RequestRef, status =
 handle_cast(
   {fin, RequestRef}, #state{requester_ref = RequesterRef, request_ref = RequestRef, status = 200, data = Data} = State
 ) ->
-
   Result = case response_lib:decode_body(Data) of
     {ok, {response, Response}} -> {result, {response, Response}};
 
