@@ -39,4 +39,6 @@ get_offsets(From, To) when From > To -> [];
 get_offsets(From, To) -> [From | get_offsets(From + 1000, To)].
 
 send({via, Module, Name}, Info) -> Module:send(Name, Info);
-send(Destination, Info) -> Destination ! Info.
+send({global, Name}, Info) -> send({via, global, Name}, Info);
+send({local, Name}, Info) -> send({via, erlang, Name}, Info);
+send(Name, Info) -> send({local, Name}, Info).

@@ -3,7 +3,7 @@
 -behaviour(supervisor).
 
 %%% api
--export([start_link/1, start_child/4, terminate_child/2]).
+-export([start_link/1, start_child/5, terminate_child/2]).
 
 %%% behaviour
 -export([init/1]).
@@ -18,8 +18,8 @@
 
 start_link(JobRef) -> supervisor:start_link(?SERVER_NAME(JobRef), ?MODULE, []).
 
-start_child(JobRef, ControllerRef, ChildJobRef, ChildJobData) ->
-  supervisor:start_child(?SERVER_NAME(JobRef), [ControllerRef, ChildJobRef, ChildJobData]).
+start_child(JobRef, ControllerRef, ChildJobPriority, ChildJobRef, ChildJobData) ->
+  supervisor:start_child(?SERVER_NAME(JobRef), [ControllerRef, ChildJobPriority, ChildJobRef, ChildJobData]).
 
 terminate_child(JobRef, ChildJobPid) -> supervisor:terminate_child(?SERVER_NAME(JobRef), ChildJobPid).
 

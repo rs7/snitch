@@ -1,10 +1,12 @@
 -module(get_albums).
 
-%%% api
+-behaviour(request_type).
+
+%%% behaviour
 -export([request/1, response/2]).
 
 %%%===================================================================
-%%% api
+%%% behaviour
 %%%===================================================================
 
 request([OwnerId]) ->
@@ -18,15 +20,18 @@ request([OwnerId]) ->
   }.
 
 response({response, #{<<"items">> := AlbumItems}}, _Context) ->
-  lists:append(
-    [
+  {
+    lists:append(
       [
-        {get_photos, [AlbumOwnerId, AlbumId, PhotosOffset]}
+        [
+          {get_photos, [AlbumOwnerId, AlbumId, PhotosOffset]}
+          ||
+          PhotosOffset <- util:get_offsets(0, PhotosCount)
+        ]
         ||
-        PhotosOffset <- util:get_offsets(0, PhotosCount)
+        #{<<"id">> := AlbumId, <<"owner_id">> := AlbumOwnerId, <<"size">> := PhotosCount} <- AlbumItems,
+        PhotosCount > 0
       ]
-      ||
-      #{<<"id">> := AlbumId, <<"owner_id">> := AlbumOwnerId, <<"size">> := PhotosCount} <- AlbumItems,
-      PhotosCount > 0
-    ]
-  ).
+    ),
+    []
+  }.

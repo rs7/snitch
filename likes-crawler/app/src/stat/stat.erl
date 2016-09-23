@@ -3,46 +3,50 @@
 -behaviour(gen_server).
 
 %%% api
--export([start_link/0]).
+-export([start_link/1]).
 
 %%% behaviour
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
--define(TIMEOUT, 60000).
-
--record(state, {}).
+-record(state, {timeout, sources}).
 
 %%%===================================================================
 %%% api
 %%%===================================================================
 
-start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+start_link(Timeout) -> gen_server:start_link({local, ?MODULE}, ?MODULE, Timeout, []).
 
 %%%===================================================================
 %%% behaviour
 %%%===================================================================
 
-init([]) ->
+init(Timeout) ->
   self() ! timeout,
-  {ok, #state{}}.
+  NewSources = [
+    {call, fun call_queue:metrics/0},
+    {pool, fun requester_pool:get_size/0}
+  ],
+  NewState = #state{timeout = Timeout, sources = NewSources},
+  {ok, NewState}.
 
 handle_call(_Request, _From, State) -> {reply, ok, State}.
 
 handle_cast(_Request, State) -> {noreply, State}.
 
-handle_info(timeout, State) ->
-  erlang:send_after(?TIMEOUT, self(), timeout),
-  lager:info(
-    %"erlang ~p "
-    "global ~p "
-    "local ~p "
-    "pool ~p "
-    , [
-      %metrics:metrics(),
-      gen_heap:get_size({global, root_heap}),
-      gen_heap:get_size(local_heap),
-      worker_pool:get_workers_count()
-    ]),
+handle_info(timeout, #state{timeout = Timeout, sources = Sources} = State) ->
+  erlang:send_after(Timeout, self(), timeout),
+
+  Result = maps:from_list(
+    [
+      fun({Name, Fun}) ->
+        {ok, R} = Fun(),
+        {Name, R}
+      end(Source)
+      ||
+      Source <- Sources
+    ]
+  ),
+  lager:info("~p", [Result]),
   {noreply, State};
 
 handle_info(_Info, State) -> {noreply, State}.

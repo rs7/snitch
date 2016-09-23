@@ -1,7 +1,7 @@
 -module(call_queue_data).
 
 %%% api
--export([new/0, add/3, take/2]).
+-export([new/0, add/3, take/2, size/1]).
 
 %%%===================================================================
 %%% api
@@ -12,6 +12,8 @@ new() -> gb_trees:empty().
 add(Priority, Value, Data) -> gb_trees:enter(Priority, Value, Data).
 
 take(Count, Data) -> take(Count, Data, []).
+
+size(Data) -> gb_trees:size(Data).
 
 %%%===================================================================
 %%% internal

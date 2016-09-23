@@ -14,8 +14,7 @@
 %%% api
 %%%===================================================================
 
-start_link(RequesterRef) ->
-  supervisor:start_link(?IDENTIFIED_NAME(?MODULE, RequesterRef), ?MODULE, RequesterRef).
+start_link(RequesterRef) -> supervisor:start_link(?IDENTIFIED_NAME(?MODULE, RequesterRef), ?MODULE, RequesterRef).
 
 %%%===================================================================
 %%% behaviour

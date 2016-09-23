@@ -174,7 +174,7 @@ handle_info(
   SuccessCount = length(NewRequests),
   NewRequestsCountFromUp = RequestsCountFromUp + SuccessCount,
 
-  lager:debug("try_run ~B/~B", [SuccessCount, MaxCount]),
+  %lager:info("run ~B/~B", [SuccessCount, MaxCount]),
 
   case SuccessCount of
     MaxCount -> ok;

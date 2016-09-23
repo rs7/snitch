@@ -1,13 +1,17 @@
 -module(request_job).
 
-%%% api
--export([process/1]).
+-behavior(job_type).
+
+%%% behavior
+-export([process/2]).
 
 %%%===================================================================
-%%% api
+%%% behavior
 %%%===================================================================
 
-process({Type, Context}) ->
-  Priority = 1,
-  {ok, Result} = call_queue:call(Priority, Type:request(Context)),
-  {ok, [{?MODULE, RequestJob} || RequestJob <- Type:response(Result, Context)]}.
+process(Priority, {RequestType, Context}) ->
+  Request = RequestType:request(Context),
+  {ok, Result} = call_queue:call(Priority, Request),
+  {RequestJobs, Jobs} = RequestType:response(Result, Context),
+  Response = lists:append([{request_job, RequestJob} || RequestJob <- RequestJobs], Jobs),
+  {ok, Response}.

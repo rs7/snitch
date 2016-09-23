@@ -21,7 +21,10 @@ start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 init([]) ->
   Strategy = #{strategy => one_for_all, intensity => 0, period => 1},
 
-  TestJobData = {request_job, {filter_users, [1,2,3,4,5,6]}},
+  TestJobData = {request_job, {get_friends, test:which_search()}},
+
+  {ok, RequesterCount} = application:get_env(requester_count),
+  {ok, StatTimeout} = application:get_env(stat_timeout),
 
   Specifications = [
     #{
@@ -30,19 +33,24 @@ init([]) ->
       type => worker
     },
     #{
-      id => requester,
-      start => {requester, start_link, [make_ref()]},
+      id => requester_pool,
+      start => {requester_pool, start_link, [RequesterCount]},
       type => worker
     },
     #{
       id => controller,
-      start => {mock_controller, start_link, []},
+      start => {test, start_link, [local]},
       type => worker
     },
     #{
       id => job,
-      start => {job, start_link, [mock_controller, make_ref(), TestJobData]},
+      start => {job, start_link, [test, [1], make_ref(), TestJobData]},
       type => supervisor
+    },
+    #{
+      id => stat,
+      start => {stat, start_link, [StatTimeout]},
+      type => worker
     }
   ],
 

@@ -1,4 +1,4 @@
--module(job_type).
+-module(request_type).
 
 %%% api
 -export([behaviour_info/1]).
@@ -7,6 +7,6 @@
 %%% api
 %%%===================================================================
 
-behaviour_info(callbacks) -> [{process, 2}];
+behaviour_info(callbacks) -> [{request, 1}, {response, 2}];
 
 behaviour_info(_Other) -> undefined.

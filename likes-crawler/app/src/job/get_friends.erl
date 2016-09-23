@@ -1,4 +1,4 @@
--module(filter_users).
+-module(get_friends).
 
 -behaviour(request_type).
 
@@ -9,21 +9,21 @@
 %%% behaviour
 %%%===================================================================
 
-request(UserList) ->
+request(User) ->
   {
-    'users.get',
+    'friends.get',
     #{
-      user_ids => UserList,
+      user_id => User,
       v => '5.53'
     }
   }.
 
-response({response, Response}, _Context) ->
+response({response, #{<<"items">> := Friends, <<"count">> := _FriendsCount}}, _Context) ->
   {
     [
-      {get_albums, [maps:get(<<"id">>, User)]}
+      {filter_users, FriendsPart}
       ||
-      User <- Response, not maps:is_key(<<"deactivated">>, User)
+      FriendsPart <- util:list_partition(Friends, 1000)
     ],
     []
   }.

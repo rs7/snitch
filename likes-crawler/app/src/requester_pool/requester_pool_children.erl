@@ -1,4 +1,4 @@
--module(worker_pool_workers_supervisor).
+-module(requester_pool_children).
 
 -behaviour(supervisor).
 
@@ -8,7 +8,9 @@
 %%% behaviour
 -export([init/1]).
 
--include("../worker/worker.hrl").
+-include("../util/identified_name.hrl").
+
+-define(REQUESTER_MODULE, requester).
 
 %%%===================================================================
 %%% api
@@ -16,23 +18,21 @@
 
 start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
-start_child(WorkerId) -> supervisor:start_child(?MODULE, [WorkerId]).
+start_child(RequesterRef) -> supervisor:start_child(?MODULE, [RequesterRef]).
 
-terminate_child(WorkerId) ->
-  Pid = gproc:get_value(?WORKER_PART_KEY(worker_supervisor, WorkerId), whereis(?MODULE)), %TODO я не уверен, что это сработает
-  supervisor:terminate_child(?MODULE, Pid).
+terminate_child(RequesterRef) -> supervisor:terminate_child(?MODULE, ?IDENTIFIED_PID(?REQUESTER_MODULE, RequesterRef)).
 
 %%%===================================================================
 %%% behaviour
 %%%===================================================================
 
 init([]) ->
-  Strategy = #{strategy => simple_one_for_one, intensity => 0, period => 1},
+  Strategy = #{strategy => simple_one_for_one, intensity => 5, period => 1},
 
   Specifications = [
     #{
-      id => worker_item,
-      start => {worker, start_link, []},
+      id => requester,
+      start => {?REQUESTER_MODULE, start_link, []},
       type => worker
     }
   ],

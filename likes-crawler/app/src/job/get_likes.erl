@@ -1,11 +1,25 @@
 -module(get_likes).
 
-%%% api
+-behaviour(request_type).
+
+%%% behaviour
 -export([request/1, response/2]).
 
 %%%===================================================================
-%%% api
+%%% behaviour
 %%%===================================================================
+
+request([OwnerId, PhotoId, 0]) ->
+  {
+    'likes.getList',
+    #{
+      type => photo,
+      owner_id => OwnerId,
+      item_id => PhotoId,
+      count => 1000,
+      v => '5.53'
+    }
+  };
 
 request([OwnerId, PhotoId, Offset]) ->
   {
@@ -21,8 +35,11 @@ request([OwnerId, PhotoId, Offset]) ->
   }.
 
 response({response, #{<<"items">> := Likers}}, [OwnerId, PhotoId, _Offset]) ->
-  [
-    {save_job, {Liker, OwnerId, PhotoId}}
-    ||
-    Liker <- Likers, Liker =:= 1
-  ].
+  {
+    [],
+    [
+      {save_job, {Liker, OwnerId, PhotoId}}
+      ||
+      Liker <- Likers, Liker =:= test:which_search() %todo
+    ]
+  }.

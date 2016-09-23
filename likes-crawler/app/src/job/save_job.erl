@@ -1,13 +1,15 @@
 -module(save_job).
 
-%%% api
--export([process/1]).
+-behavior(job_type).
+
+%%% behavior
+-export([process/2]).
 
 %%%===================================================================
-%%% api
+%%% behavior
 %%%===================================================================
 
-process({Liker, OwnerId, PhotoId}) ->
+process(_Priority, {Liker, OwnerId, PhotoId}) ->
   {ok, OutputFilename} = application:get_env(output_file),
   WriteFileResult = file:write_file(OutputFilename, [output_line({Liker, OwnerId, PhotoId}), $\n], [append]),
   lager:info("id~B photo~B_~B ~p", [Liker, OwnerId, PhotoId, WriteFileResult]),

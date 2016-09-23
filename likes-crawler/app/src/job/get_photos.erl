@@ -1,11 +1,25 @@
 -module(get_photos).
 
-%%% api
+-behaviour(request_type).
+
+%%% behaviour
 -export([request/1, response/2]).
 
 %%%===================================================================
-%%% api
+%%% behaviour
 %%%===================================================================
+
+request([AlbumOwnerId, AlbumId, 0]) ->
+  {
+    'photos.get',
+    #{
+      owner_id => AlbumOwnerId,
+      album_id => AlbumId,
+      extended => 1,
+      count => 1000,
+      v => '5.53'
+    }
+  };
 
 request([AlbumOwnerId, AlbumId, PhotosOffset]) ->
   {
@@ -21,15 +35,18 @@ request([AlbumOwnerId, AlbumId, PhotosOffset]) ->
   }.
 
 response({response, #{<<"items">> := Items}}, _Context) ->
-  lists:append(
-    [
+  {
+    lists:append(
       [
-        {get_likes, [PhotoOwnerId, PhotoId, LikesOffset]}
+        [
+          {get_likes, [PhotoOwnerId, PhotoId, LikesOffset]}
+          ||
+          LikesOffset <- util:get_offsets(0, LikesCount)
+        ]
         ||
-        LikesOffset <- util:get_offsets(0, LikesCount)
+        #{<<"id">> := PhotoId, <<"owner_id">> := PhotoOwnerId, <<"likes">> := #{<<"count">> := LikesCount}} <- Items,
+        LikesCount > 0
       ]
-      ||
-      #{<<"id">> := PhotoId, <<"owner_id">> := PhotoOwnerId, <<"likes">> := #{<<"count">> := LikesCount}} <- Items,
-      LikesCount > 0
-    ]
-  ).
+    ),
+    []
+  }.
