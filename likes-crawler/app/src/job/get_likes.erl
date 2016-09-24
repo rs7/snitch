@@ -34,12 +34,18 @@ request([OwnerId, PhotoId, Offset]) ->
     }
   }.
 
+%% пользователь удалил страницу
+%% пользователь удалил альбом
+%% пользователь удалил фотографию
+%% пользователь скрыл альбом
+response({error, 15}, _Context) -> {[],[]};
+
 response({response, #{<<"items">> := Likers}}, [OwnerId, PhotoId, _Offset]) ->
   {
     [],
     [
       {save_job, {Liker, OwnerId, PhotoId}}
       ||
-      Liker <- Likers, Liker =:= test:which_search() %todo
+      Liker <- Likers, Liker =:= test_controller:search_user() %todo
     ]
   }.

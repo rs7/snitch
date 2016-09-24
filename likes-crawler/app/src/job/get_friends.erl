@@ -18,6 +18,9 @@ request(User) ->
     }
   }.
 
+%% пользователь удалил страницу
+response({error, 15}, _Context) -> {[],[]};
+
 response({response, #{<<"items">> := Friends, <<"count">> := _FriendsCount}}, _Context) ->
   {
     [

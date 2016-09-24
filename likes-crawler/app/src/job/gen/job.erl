@@ -3,7 +3,7 @@
 -behaviour(supervisor).
 
 %%% api
--export([start_link/4, stop/1, start_child_job/4, terminate_child_job/2]).
+-export([start_link/4, stop/1]).
 
 %%% behaviour
 -export([init/1]).
@@ -16,35 +16,27 @@
 %%% api
 %%%===================================================================
 
-start_link(ControllerRef, JobPriority, JobRef, JobData) ->
-  supervisor:start_link(?SERVER_NAME(JobRef), ?MODULE, {ControllerRef, JobPriority, JobRef, JobData}).
+start_link(Ref, Priority, Body, ControllerRef) ->
+  supervisor:start_link(?SERVER_NAME(Ref), ?MODULE, {Ref, Priority, Body, ControllerRef}).
 
-stop(JobRef) -> exit(whereis(?SERVER_NAME(JobRef)), shutdown). %todo: необходим ли этот метод?
-
-start_child_job(JobRef, ChildJobPriority, ChildJobRef, ChildJobData) ->
-  ControllerRef = job_server:get_ref(JobRef),
-  job_children:start_child(JobRef, ControllerRef, ChildJobPriority, ChildJobRef, ChildJobData).
-
-terminate_child_job(JobRef, ChildJobRef) -> job_children:terminate_child(JobRef, ?IDENTIFIED_PID(?MODULE, ChildJobRef)).
+stop(Ref) -> ok.%exit(?IDENTIFIED_PID(?MODULE, Ref), shutdown).
 
 %%%===================================================================
 %%% behaviour
 %%%===================================================================
 
-init({ControllerRef, JobPriority, JobRef, JobData}) ->
+init({Ref, Priority, Body, ControllerRef}) ->
   Strategy = #{strategy => one_for_all, intensity => 1, period => 5},
 
   Specifications = [
     #{
       id => children,
-      restart => transient,
-      start => {job_children, start_link, [JobRef]},
+      start => {job_list, start_link, [Ref]},
       type => supervisor
     },
     #{
       id => server,
-      restart => transient,
-      start => {job_server, start_link, [ControllerRef, JobPriority, JobRef, JobData]},
+      start => {job_server, start_link, [Ref, Priority, Body, ControllerRef]},
       type => worker
     }
   ],

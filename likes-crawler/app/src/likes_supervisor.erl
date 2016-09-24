@@ -21,7 +21,7 @@ start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 init([]) ->
   Strategy = #{strategy => one_for_all, intensity => 0, period => 1},
 
-  TestJobData = {request_job, {get_friends, test:which_search()}},
+  JobArgs = [make_ref(), [1], {request_job, {get_friends, test_controller:search_user()}}, test_controller],
 
   {ok, RequesterCount} = application:get_env(requester_count),
   {ok, StatTimeout} = application:get_env(stat_timeout),
@@ -39,12 +39,13 @@ init([]) ->
     },
     #{
       id => controller,
-      start => {test, start_link, [local]},
+      start => {test_controller, start_link, []},
       type => worker
     },
     #{
       id => job,
-      start => {job, start_link, [test, [1], make_ref(), TestJobData]},
+      restart => transient,
+      start => {job, start_link, JobArgs},
       type => supervisor
     },
     #{

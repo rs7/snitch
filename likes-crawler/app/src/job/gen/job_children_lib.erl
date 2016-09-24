@@ -1,4 +1,4 @@
--module(job_children_list).
+-module(job_children_lib).
 
 %%% api
 -export([create/1, remove/2, is_empty/1]).

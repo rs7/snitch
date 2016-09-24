@@ -3,7 +3,7 @@
 -behaviour(gen_server).
 
 %%% api
--export([start_link/4, get_ref/1]).
+-export([start_link/4]).
 
 %%% behaviour
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -12,24 +12,24 @@
 
 -define(SERVER_NAME(JobRef), ?IDENTIFIED_NAME(?MODULE, JobRef)).
 
--record(state, {controller_ref, job_ref, job_data, job_children, job_priority}).
+-define(START_MESSAGE, start).
+
+-record(state, {ref, priority, body, controller_ref, children}).
 
 %%%===================================================================
 %%% api
 %%%===================================================================
 
-start_link(ControllerRef, JobPriority, JobRef, JobData) ->
-  gen_server:start_link(?SERVER_NAME(JobRef), ?MODULE, {ControllerRef, JobPriority, JobRef, JobData}, []).
-
-get_ref(JobRef) -> ?SERVER_NAME(JobRef).
+start_link(Ref, Priority, Body, ControllerRef) ->
+  gen_server:start_link(?SERVER_NAME(Ref), ?MODULE, {Ref, Priority, Body, ControllerRef}, []).
 
 %%%===================================================================
 %%% behaviour
 %%%===================================================================
 
-init({ControllerRef, JobPriority, JobRef, JobData}) ->
-  self() ! process_job,
-  NewState = #state{controller_ref = ControllerRef, job_ref = JobRef, job_data = JobData, job_priority = JobPriority},
+init({Ref, Priority, Body, ControllerRef}) ->
+  self() ! ?START_MESSAGE,
+  NewState = #state{ref = Ref, priority = Priority, body = Body, controller_ref = ControllerRef},
   {ok, NewState}.
 
 handle_call(_Request, _From, State) -> {reply, ok, State}.
@@ -37,39 +37,36 @@ handle_call(_Request, _From, State) -> {reply, ok, State}.
 handle_cast(_Request, State) -> {noreply, State}.
 
 handle_info(
-  process_job,
+  ?START_MESSAGE,
   #state{
-    controller_ref = ControllerRef, job_ref = JobRef, job_data = {JobType, JobContext}, job_priority = JobPriority
+    ref = Ref, priority = Priority, body = {Type, Context}, controller_ref = ControllerRef
   } = State
 ) ->
-  %lager:info("process_job ~p", [{JobPriority, JobType, JobContext}]),
+  {ok, ChildBodies} = Type:process(Priority, Context),
 
-  {ok, ChildJobDataItems} = JobType:process(JobPriority, JobContext),
-
-  case ChildJobDataItems of
+  case ChildBodies of
     [] ->
-      complete(ControllerRef, JobRef),
+      complete(Ref, ControllerRef),
       {noreply, State};
 
-    ChildJobDataItems ->
-      ChildJobRefItems = start_child_jobs(JobRef, JobPriority, ChildJobDataItems),
-      NewState = State#state{job_children = job_children_list:create(ChildJobRefItems)},
+    ChildBodies ->
+      ChildRefs = start_children(Ref, Priority, ChildBodies),
+      NewChildren = job_children_lib:create(ChildRefs),
+      NewState = State#state{children = NewChildren},
       {noreply, NewState}
   end;
 
 handle_info(
-  {complete, ChildJobRef}, #state{controller_ref = ControllerRef, job_ref = JobRef, job_children = JobChildren} = State
+  {complete, ChildRef}, #state{ref = Ref, controller_ref = ControllerRef, children = Children} = State
 ) ->
-  ok = job:terminate_child_job(JobRef, ChildJobRef),
+  NewChildren = job_children_lib:remove(ChildRef, Children),
 
-  NewJobChildren = job_children_list:remove(ChildJobRef, JobChildren),
-
-  case job_children_list:is_empty(NewJobChildren) of
-    true -> complete(ControllerRef, JobRef);
+  case job_children_lib:is_empty(NewChildren) of
+    true -> complete(Ref, ControllerRef);
     false -> ok
   end,
 
-  NewState = State#state{job_children = NewJobChildren},
+  NewState = State#state{children = NewChildren},
   {noreply, NewState};
 
 handle_info(_Info, State) -> {noreply, State}.
@@ -82,20 +79,24 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%% internal
 %%%===================================================================
 
-start_child_jobs(JobRef, JobPriority, ChildJobDataItems) ->
-  start_child_jobs(JobRef, JobPriority, ChildJobDataItems, [], 1).
+start_children(Ref, Priority, ChildBodies) -> start_children(Ref, Priority, ChildBodies, [], 1).
 
-start_child_jobs(_JobRef, _JobPriority, [], ChildJobRefItems, _ChildJobNumber) -> ChildJobRefItems;
-start_child_jobs(JobRef, JobPriority, [ChildJobData | RemainingChildJobDataItems], ChildJobRefItems, ChildJobNumber) ->
-  ChildJobPriority = JobPriority ++ [ChildJobNumber],
-  ChildJobRef = start_child_job(JobRef, ChildJobPriority, ChildJobData),
-  start_child_jobs(
-    JobRef, JobPriority, RemainingChildJobDataItems, [ChildJobRef | ChildJobRefItems], ChildJobNumber + 1
-  ).
+start_children(_Ref, _Priority, [], ChildRefs, _ChildNumber) -> ChildRefs;
 
-start_child_job(JobRef, ChildJobPriority, ChildJobData) ->
-  ChildJobRef = make_ref(),
-  {ok, _ChildJobPid} = job:start_child_job(JobRef, ChildJobPriority, ChildJobRef, ChildJobData),
-  ChildJobRef.
+start_children(Ref, Priority, [ChildBody | RemainingChildBodies], ChildRefs, ChildNumber) ->
+  ChildPriority = Priority ++ [ChildNumber],
+  ChildRef = start_child(Ref, ChildPriority, ChildBody),
+  start_children(Ref, Priority, RemainingChildBodies, [ChildRef | ChildRefs], ChildNumber + 1).
 
-complete(ControllerRef, JobRef) -> util:send(ControllerRef, {complete, JobRef}).
+start_child(Ref, ChildPriority, ChildBody) ->
+  ChildRef = make_ref(),
+  ControllerRef = self(), %?SERVER_NAME(Ref)
+  ChildArgs = [ChildRef, ChildPriority, ChildBody, ControllerRef],
+  {ok, _ChildPid} = job_list:start_job(Ref, ChildArgs),
+  ChildRef.
+
+complete(Ref, ControllerRef) ->
+  send_complete_message(Ref, ControllerRef),
+  job:stop(Ref).
+
+send_complete_message(Ref, ControllerRef) -> util:send(ControllerRef, {complete, Ref}).

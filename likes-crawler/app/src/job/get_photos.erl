@@ -34,6 +34,15 @@ request([AlbumOwnerId, AlbumId, PhotosOffset]) ->
     }
   }.
 
+%% пользователь скрыл альбом
+response({error, 7}, _Context) -> {[],[]};
+
+%% пользователь удалил страницу
+response({error, 15}, _Context) -> {[],[]};
+
+%% пользователь удалил альбом
+response({error, 200}, _Context) -> {[],[]};
+
 response({response, #{<<"items">> := Items}}, _Context) ->
   {
     lists:append(
