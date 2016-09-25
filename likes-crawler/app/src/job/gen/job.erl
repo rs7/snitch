@@ -3,7 +3,7 @@
 -behaviour(supervisor).
 
 %%% api
--export([start_link/4, stop/1]).
+-export([start_link/5, stop/2]).
 
 %%% behaviour
 -export([init/1]).
@@ -16,16 +16,18 @@
 %%% api
 %%%===================================================================
 
-start_link(Ref, Priority, Body, ControllerRef) ->
-  supervisor:start_link(?SERVER_NAME(Ref), ?MODULE, {Ref, Priority, Body, ControllerRef}).
+start_link(Ref, Priority, Body, ControllerRef, ListRef) ->
+  supervisor:start_link(?SERVER_NAME(Ref), ?MODULE, {Ref, Priority, Body, ControllerRef, ListRef}).
 
-stop(Ref) -> ok.%exit(?IDENTIFIED_PID(?MODULE, Ref), shutdown).
+stop(Ref, ListRef) ->
+  Pid = ?IDENTIFIED_PID(?MODULE, Ref),
+  job_list:terminate_job(ListRef, Pid).
 
 %%%===================================================================
 %%% behaviour
 %%%===================================================================
 
-init({Ref, Priority, Body, ControllerRef}) ->
+init({Ref, Priority, Body, ControllerRef, ListRef}) ->
   Strategy = #{strategy => one_for_all, intensity => 1, period => 5},
 
   Specifications = [
@@ -36,7 +38,7 @@ init({Ref, Priority, Body, ControllerRef}) ->
     },
     #{
       id => server,
-      start => {job_server, start_link, [Ref, Priority, Body, ControllerRef]},
+      start => {job_server, start_link, [Ref, Priority, Body, ControllerRef, ListRef]},
       type => worker
     }
   ],

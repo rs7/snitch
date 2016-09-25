@@ -46,6 +46,6 @@ response({response, #{<<"items">> := Likers}}, [OwnerId, PhotoId, _Offset]) ->
     [
       {save_job, {Liker, OwnerId, PhotoId}}
       ||
-      Liker <- Likers, Liker =:= test_controller:search_user() %todo
+      Liker <- Likers, conveyor_controller:is_target_user(Liker)
     ]
   }.

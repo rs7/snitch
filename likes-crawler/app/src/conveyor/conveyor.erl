@@ -1,9 +1,9 @@
--module(sup).
+-module(conveyor).
 
 -behaviour(supervisor).
 
 %%% api
--export([start_link/1, which_children/0]).
+-export([start_link/0]).
 
 %%% behaviour
 -export([init/1]).
@@ -12,27 +12,26 @@
 %%% api
 %%%===================================================================
 
-start_link(Reason) -> supervisor:start_link({local, ?MODULE}, ?MODULE, Reason).
-
-which_children() -> supervisor:which_children(?MODULE).
+start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 %%%===================================================================
 %%% behaviour
 %%%===================================================================
 
-init(Reason) ->
+init([]) ->
   Strategy = #{strategy => one_for_all, intensity => 1, period => 5},
+
+  ListRef = make_ref(),
 
   Specifications = [
     #{
-      id => worker_supervisor,
-      restart => transient,
-      start => {wor, start_link, []},
-      type => worker
+      id => list,
+      start => {job_list, start_link, [ListRef]},
+      type => supervisor
     },
     #{
-      id => stat_server,
-      start => {st, start_link, [Reason]},
+      id => controller,
+      start => {conveyor_controller, start_link, [ListRef]},
       type => worker
     }
   ],
