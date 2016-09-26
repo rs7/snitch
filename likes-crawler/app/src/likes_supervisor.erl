@@ -19,10 +19,12 @@ start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 %%%===================================================================
 
 init([]) ->
-  Strategy = #{strategy => one_for_all, intensity => 0, period => 1},
+  Strategy = #{strategy => one_for_all, intensity => 5, period => 1},
 
   {ok, RequesterCount} = application:get_env(requester_count),
   {ok, StatTimeout} = application:get_env(stat_timeout),
+
+  ConveyorJobsInOneTime = RequesterCount div 5,
 
   Specifications = [
     #{
@@ -37,7 +39,7 @@ init([]) ->
     },
     #{
       id => conveyor,
-      start => {conveyor, start_link, []},
+      start => {conveyor, start_link, [ConveyorJobsInOneTime]},
       type => supervisor
     },
     #{

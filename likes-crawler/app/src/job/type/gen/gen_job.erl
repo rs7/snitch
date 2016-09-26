@@ -1,10 +1,12 @@
--module(mock).
+-module(gen_job).
 
 %%% api
--export([get_request_data/0]).
+-export([behaviour_info/1]).
 
 %%%===================================================================
 %%% api
 %%%===================================================================
 
-get_request_data() -> {'utils.getServerTime', #{}}.
+behaviour_info(callbacks) -> [{process, 2}];
+
+behaviour_info(_Other) -> undefined.

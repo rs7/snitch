@@ -1,6 +1,6 @@
--module(save_job).
+-module(save).
 
--behavior(job_type).
+-behaviour(gen_job).
 
 %%% behavior
 -export([process/2]).

@@ -8,7 +8,7 @@
 %%% behaviour
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
--define(CHANGE_REQUESTER_COUNT_TIMEOUT, 200).
+-define(CHANGE_REQUESTER_COUNT_TIMEOUT, 1000).
 
 -record(state, {set_count = 0, current_count = 0, requester_ref_items = []}).
 

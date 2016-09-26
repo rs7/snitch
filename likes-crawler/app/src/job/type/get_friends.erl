@@ -1,13 +1,16 @@
 -module(get_friends).
 
--behaviour(request_type).
+-behaviour(gen_job).
+-behaviour(gen_request_job).
 
 %%% behaviour
--export([request/1, response/2]).
+-export([process/2, request/1, response/2]).
 
 %%%===================================================================
 %%% behaviour
 %%%===================================================================
+
+process(Priority, Context) -> gen_request_job:process(?MODULE, Priority, Context).
 
 request(User) ->
   {
@@ -19,14 +22,11 @@ request(User) ->
   }.
 
 %% пользователь удалил страницу
-response({error, 15}, _Context) -> {[],[]};
+response({error, 15}, _Context) -> [];
 
 response({response, #{<<"items">> := Friends, <<"count">> := _FriendsCount}}, _Context) ->
-  {
-    [
-      {filter_users, FriendsPart}
-      ||
-      FriendsPart <- util:list_partition(Friends, 1000)
-    ],
-    []
-  }.
+  [
+    {get_users, FriendsPart}
+    ||
+    FriendsPart <- util:list_partition(Friends, 1000)
+  ].
