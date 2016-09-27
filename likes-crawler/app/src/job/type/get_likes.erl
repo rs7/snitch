@@ -12,18 +12,17 @@
 
 process(Priority, Context) -> gen_request_job:process(?MODULE, Priority, Context).
 
-request({OwnerId, PhotoId, Offset}) ->
-  {
-    'likes.getList',
+request({OwnerId, PhotoId, Offset, Count}) ->
+  Params = maps:merge(
     #{
       type => photo,
       owner_id => OwnerId,
       item_id => PhotoId,
-      count => 1000,
-      offset => Offset,
       v => '5.53'
-    }
-  }.
+    },
+    list:optimize_map(Offset, Count, 100)
+  ),
+  {'likes.getList', Params}.
 
 %% пользователь удалил страницу
 %% пользователь удалил альбом
@@ -31,7 +30,7 @@ request({OwnerId, PhotoId, Offset}) ->
 %% пользователь скрыл альбом
 response({error, 15}, _Context) -> [];
 
-response({response, #{<<"items">> := Likers}}, {OwnerId, PhotoId, _Offset}) ->
+response({response, #{<<"items">> := Likers}}, {OwnerId, PhotoId, _Offset, _Count}) ->
   [
     {save, {Liker, OwnerId, PhotoId}}
     ||

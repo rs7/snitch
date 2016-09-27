@@ -23,8 +23,14 @@ start_link(Timeout) -> gen_server:start_link({local, ?MODULE}, ?MODULE, Timeout,
 init(Timeout) ->
   self() ! timeout,
   NewSources = [
-    {call, fun call_queue:metrics/0},
-    {pool, fun requester_pool:get_size/0}
+    {pool, fun requester_pool:get_size/0},
+    {folsom,
+      fun() ->
+        Names = folsom_metrics:get_metrics(),
+        Map = maps:from_list([{Name, folsom_metrics:get_metric_value(Name)} || Name <- Names]),
+        {ok, Map}
+      end
+    }
   ],
   NewState = #state{timeout = Timeout, sources = NewSources},
   {ok, NewState}.

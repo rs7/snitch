@@ -10,6 +10,8 @@
 
 -include("../util/identified_name.hrl").
 
+-define(SEND_BLOCK_MESSAGE, send_block).
+-define(SHORT_BLOCK_TIMEOUT, 1000).
 -define(REQUEST_COUNT_BY_CONNECTION, 100).
 
 -record(state, {
@@ -94,7 +96,7 @@ handle_info(
 handle_info(
   {gun_up, GunConnectionPid, http}, #state{gun_connection_pid = GunConnectionPid} = State
 ) ->
-  self() ! try_run,
+  self() ! ?SEND_BLOCK_MESSAGE,
   NewState = State#state{requests_count_from_up = 0},
   {noreply, NewState};
 
@@ -158,27 +160,27 @@ handle_info(
   {noreply, NewState};
 
 %%%===================================================================
-%%% gun_data
+%%% send_block
 %%%===================================================================
 
 handle_info(
-  try_run,
+  ?SEND_BLOCK_MESSAGE,
   #state{
     requester_ref = RequesterRef, gun_connection_pid = GunConnectionPid, requests_in_progress = RequestsInProgress,
     requests_count_from_up = RequestsCountFromUp
   } = State
-) when RequestsCountFromUp =/= ?REQUEST_COUNT_BY_CONNECTION ->
+) ->
   MaxCount = ?REQUEST_COUNT_BY_CONNECTION - RequestsCountFromUp,
   NewRequests = run_requests(RequesterRef, GunConnectionPid, MaxCount),
   NewRequestsInProgress = maps:merge(RequestsInProgress, maps:from_list(NewRequests)),
   SuccessCount = length(NewRequests),
   NewRequestsCountFromUp = RequestsCountFromUp + SuccessCount,
 
-  %lager:info("run ~B/~B", [SuccessCount, MaxCount]),
+  lager:debug("send_block ~B/~B", [SuccessCount, MaxCount]),
 
   case SuccessCount of
     MaxCount -> ok;
-    SuccessCount -> erlang:send_after(1000, self(), try_run)
+    SuccessCount -> erlang:send_after(?SHORT_BLOCK_TIMEOUT, self(), ?SEND_BLOCK_MESSAGE)
   end,
 
   NewState = State#state{requests_in_progress = NewRequestsInProgress, requests_count_from_up = NewRequestsCountFromUp},
@@ -240,8 +242,6 @@ run_request_server(RequesterRef, RequestRef, StreamRef) ->
 %%%===================================================================
 %%% requests_in_progress_error
 %%%===================================================================
-
-requests_in_progress_error(RequestsInProgress, _Reason) when map_size(RequestsInProgress) =:= 0 -> ok;
 
 requests_in_progress_error(RequestsInProgress, Reason) -> [
   request:error(RequestPid, RequestRef, Reason) || {RequestPid, RequestRef} <- maps:values(RequestsInProgress)

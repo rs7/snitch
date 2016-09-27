@@ -10,7 +10,7 @@
 
 -define(SERVER_NAME, {global, ?MODULE}).
 
--record(state, {data, call_count = 0}).
+-record(state, {data}).
 
 %%%===================================================================
 %%% api
@@ -22,9 +22,9 @@ call(Priority, RequestData) -> gen_server:call(?SERVER_NAME, {call, Priority, Re
 
 add(Priority, RequestData, From) -> gen_server:cast(?SERVER_NAME, {add, Priority, RequestData, From}).
 
-take(Count) -> gen_server:call(?SERVER_NAME, {take, Count}).
+take(Count) -> gen_server:call(?SERVER_NAME, {take, Count}, infinity).
 
-metrics() -> gen_server:call(?SERVER_NAME, metrics).
+metrics() -> gen_server:call(?SERVER_NAME, metrics, infinity).
 
 %%%===================================================================
 %%% behaviour
@@ -32,24 +32,21 @@ metrics() -> gen_server:call(?SERVER_NAME, metrics).
 
 init([]) ->
   NewData = call_queue_data:new(),
+  folsom_metrics:new_counter(call_count),
+  folsom_metrics:new_gauge(call_queue_size),
+  folsom_metrics:notify({call_queue_size, call_queue_data:size(NewData)}),
   NewState = #state{data = NewData},
   {ok, NewState}.
 
-handle_call({call, Priority, RequestData}, From, #state{call_count = CallCount} = State) ->
-  NewState = State#state{call_count = CallCount + 1},
-  handle_cast({add, Priority, RequestData, From}, NewState);
+handle_call({call, Priority, RequestData}, From, State) ->
+  folsom_metrics:notify({call_count, {inc, 1}}),
+  handle_cast({add, Priority, RequestData, From}, State);
 
 handle_call({take, Count}, _From, #state{data = Data} = State) ->
   {Items, NewData} = call_queue_data:take(Count, Data),
+  folsom_metrics:notify({call_queue_size, call_queue_data:size(NewData)}),
   NewState = State#state{data = NewData},
   {reply, {ok, Items}, NewState};
-
-handle_call(metrics, _From, #state{data = Data, call_count = CallCount} = State) ->
-  Result = #{
-    size => call_queue_data:size(Data),
-    calls => CallCount
-  },
-  {reply, {ok, Result}, State};
 
 handle_call(_Request, _From, State) -> {reply, ok, State}.
 
@@ -57,6 +54,7 @@ handle_cast({add, Priority, RequestData, From}, #state{data = Data} = State) ->
   RequestRef = make_ref(),
   Item = {RequestRef, RequestData, From},
   NewData = call_queue_data:add(Priority, Item, Data),
+  folsom_metrics:notify({call_queue_size, call_queue_data:size(NewData)}),
   NewState = State#state{data = NewData},
   {noreply, NewState};
 

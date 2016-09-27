@@ -25,6 +25,8 @@ is_target_user(Liker) -> lists:member(Liker, [53083705, 38940203, 41362423, 1052
 %%%===================================================================
 
 init({ListRef, JobsInOneTime}) ->
+  lager:debug("JobsInOneTime: ~B", [JobsInOneTime]),
+
   start_jobs(JobsInOneTime),
   NewConveyorList = conveyor_list:create_list(),
   NextJobNumber = 1,

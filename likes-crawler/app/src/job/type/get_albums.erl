@@ -26,9 +26,9 @@ response({response, #{<<"items">> := AlbumItems}}, _Context) ->
   lists:append(
     [
       [
-        {get_photos, {AlbumOwnerId, AlbumId, PhotosOffset}}
+        {get_photos, {AlbumOwnerId, AlbumId, PhotosPageOffset, PhotosPageCount}}
         ||
-        PhotosOffset <- util:get_offsets(0, PhotosCount)
+        {PhotosPageOffset, PhotosPageCount} <- list:params(PhotosCount, 1000)
       ]
       ||
       #{<<"id">> := AlbumId, <<"owner_id">> := AlbumOwnerId, <<"size">> := PhotosCount} <- AlbumItems,

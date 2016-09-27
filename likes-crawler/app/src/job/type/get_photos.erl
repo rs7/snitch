@@ -12,18 +12,17 @@
 
 process(Priority, Context) -> gen_request_job:process(?MODULE, Priority, Context).
 
-request({AlbumOwnerId, AlbumId, PhotosOffset}) ->
-  {
-    'photos.get',
+request({AlbumOwnerId, AlbumId, PhotosOffset, PhotosCount}) ->
+  Params = maps:merge(
     #{
       owner_id => AlbumOwnerId,
       album_id => AlbumId,
       extended => 1,
-      count => 1000,
-      offset => PhotosOffset,
       v => '5.53'
-    }
-  }.
+    },
+    list:optimize_map(PhotosOffset, PhotosCount, 1000)
+  ),
+  {'photos.get', Params}.
 
 %% пользователь скрыл альбом
 response({error, 7}, _Context) -> [];
@@ -38,9 +37,9 @@ response({response, #{<<"items">> := Items}}, _Context) ->
   lists:append(
     [
       [
-        {get_likes, {PhotoOwnerId, PhotoId, LikesOffset}}
+        {get_likes, {PhotoOwnerId, PhotoId, LikesOffset, LikesCount}}
         ||
-        LikesOffset <- util:get_offsets(0, LikesCount)
+        {LikesOffset, LikesCount} <- list:params(LikesCount, 1000)
       ]
       ||
       #{<<"id">> := PhotoId, <<"owner_id">> := PhotoOwnerId, <<"likes">> := #{<<"count">> := LikesCount}} <- Items,
