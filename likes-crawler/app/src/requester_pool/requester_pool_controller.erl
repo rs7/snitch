@@ -8,7 +8,7 @@
 %%% behaviour
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
--define(CHANGE_REQUESTER_COUNT_TIMEOUT, 1000).
+-define(CHANGE_REQUESTER_COUNT_TIMEOUT, 2000).
 
 -record(state, {set_count = 0, current_count = 0, requester_ref_items = []}).
 
@@ -27,6 +27,7 @@ set_requester_count(RequesterCount) -> gen_server:cast(?MODULE, {set_requester_c
 %%%===================================================================
 
 init(RequesterCount) ->
+  folsom_metrics:new_counter(pool),
   self() ! update_count,
   NewState = #state{set_count = RequesterCount},
   {ok, NewState}.
@@ -53,6 +54,7 @@ handle_info(
   RequesterRef = make_ref(),
   {ok, _RequesterPid} = requester_pool_children:start_child(RequesterRef),
   erlang:send_after(?CHANGE_REQUESTER_COUNT_TIMEOUT, self(), update_count),
+  folsom_metrics:notify({pool, {inc, 1}}),
   NewState = State#state{current_count = CurrentCount + 1, requester_ref_items = [RequesterRef | RequesterRefItems]},
   {noreply, NewState};
 
@@ -65,6 +67,7 @@ handle_info(
 ) when CurrentCount > TargetCount ->
   ok = requester_pool_children:terminate_child(RequesterRef),
   erlang:send_after(?CHANGE_REQUESTER_COUNT_TIMEOUT, self(), update_workers_count),
+  folsom_metrics:notify({pool, {dec, 1}}),
   NewState = State#state{current_count = CurrentCount - 1, requester_ref_items = RemainingRequesterRefItems},
   {noreply, NewState};
 

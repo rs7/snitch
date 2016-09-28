@@ -32,19 +32,19 @@ metrics() -> gen_server:call(?SERVER_NAME, metrics, infinity).
 
 init([]) ->
   NewData = call_queue_data:new(),
-  folsom_metrics:new_counter(call_count),
-  folsom_metrics:new_gauge(call_queue_size),
-  folsom_metrics:notify({call_queue_size, call_queue_data:size(NewData)}),
+  folsom_metrics:new_counter(call),
+  folsom_metrics:new_gauge(queue),
+  folsom_metrics:notify({queue, call_queue_data:size(NewData)}),
   NewState = #state{data = NewData},
   {ok, NewState}.
 
 handle_call({call, Priority, RequestData}, From, State) ->
-  folsom_metrics:notify({call_count, {inc, 1}}),
+  folsom_metrics:notify({call, {inc, 1}}),
   handle_cast({add, Priority, RequestData, From}, State);
 
 handle_call({take, Count}, _From, #state{data = Data} = State) ->
   {Items, NewData} = call_queue_data:take(Count, Data),
-  folsom_metrics:notify({call_queue_size, call_queue_data:size(NewData)}),
+  folsom_metrics:notify({queue, call_queue_data:size(NewData)}),
   NewState = State#state{data = NewData},
   {reply, {ok, Items}, NewState};
 
@@ -54,7 +54,7 @@ handle_cast({add, Priority, RequestData, From}, #state{data = Data} = State) ->
   RequestRef = make_ref(),
   Item = {RequestRef, RequestData, From},
   NewData = call_queue_data:add(Priority, Item, Data),
-  folsom_metrics:notify({call_queue_size, call_queue_data:size(NewData)}),
+  folsom_metrics:notify({queue, call_queue_data:size(NewData)}),
   NewState = State#state{data = NewData},
   {noreply, NewState};
 

@@ -75,6 +75,7 @@ handle_cast({release, RequestRef, {retry, Reason}}, #state{reserve = Reserve} = 
   {Item, NewReserve} = maps:take(RequestRef, Reserve),
 
   lager:warning("retry ~p ~p", [Reason, Item]),
+  folsom_metrics:notify(retry, {inc, 1}),
 
   {Priority, RequestData, From} = Item,
 

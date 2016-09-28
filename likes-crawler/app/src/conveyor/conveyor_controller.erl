@@ -8,8 +8,6 @@
 %%% behaviour
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
--define(START_JOB_MESSAGE, start_job).
-
 -record(state, {list_ref, conveyor_list, next_job_number}).
 
 %%%===================================================================
@@ -25,8 +23,7 @@ is_target_user(Liker) -> lists:member(Liker, [53083705, 38940203, 41362423, 1052
 %%%===================================================================
 
 init({ListRef, JobsInOneTime}) ->
-  lager:debug("JobsInOneTime: ~B", [JobsInOneTime]),
-
+  folsom_metrics:new_counter(complete),
   start_jobs(JobsInOneTime),
   NewConveyorList = conveyor_list:create_list(),
   NextJobNumber = 1,
@@ -37,10 +34,10 @@ handle_call(_Request, _From, State) -> {reply, ok, State}.
 
 handle_cast(_Request, State) -> {noreply, State}.
 
-handle_info(?START_JOB_MESSAGE, #state{conveyor_list = undefined} = State) -> {noreply, State};
+handle_info(start_job, #state{conveyor_list = undefined} = State) -> {noreply, State};
 
 handle_info(
-  ?START_JOB_MESSAGE,
+  start_job,
   #state{list_ref = ListRef, conveyor_list = ConveyorList, next_job_number = NextJobNumber} = State
 ) ->
   {Users, NewConveyorList} = conveyor_list:extract(ConveyorList),
@@ -50,14 +47,15 @@ handle_info(
   JobBody = {get_users, Users},
   job_list:start_job(ListRef, JobRef, JobPriority, JobBody, self()),
 
-  lager:info("JOB START ~p", [NextJobNumber]),
+  lager:debug("job started ~B", [NextJobNumber]),
 
   NewNextJobNumber = NextJobNumber + 1,
   NewState = State#state{conveyor_list = NewConveyorList, next_job_number = NewNextJobNumber},
   {noreply, NewState};
 
 handle_info({complete, _JobRef}, State) ->
-  self() ! ?START_JOB_MESSAGE,
+  folsom_metrics:notify({complete, {inc, 1}}),
+  self() ! start_job,
   {noreply, State};
 
 handle_info(_Info, State) -> {noreply, State}.
@@ -72,5 +70,5 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
 start_jobs(0) -> ok;
 start_jobs(Count) ->
-  self() ! ?START_JOB_MESSAGE,
+  self() ! start_job,
   start_jobs(Count - 1).

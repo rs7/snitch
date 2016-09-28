@@ -8,7 +8,7 @@
 %%% behaviour
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
--record(state, {timeout, sources}).
+-record(state, {timeout}).
 
 %%%===================================================================
 %%% api
@@ -21,38 +21,17 @@ start_link(Timeout) -> gen_server:start_link({local, ?MODULE}, ?MODULE, Timeout,
 %%%===================================================================
 
 init(Timeout) ->
-  self() ! timeout,
-  NewSources = [
-    {pool, fun requester_pool:get_size/0},
-    {folsom,
-      fun() ->
-        Names = folsom_metrics:get_metrics(),
-        Map = maps:from_list([{Name, folsom_metrics:get_metric_value(Name)} || Name <- Names]),
-        {ok, Map}
-      end
-    }
-  ],
-  NewState = #state{timeout = Timeout, sources = NewSources},
+  self() ! info_metrics,
+  NewState = #state{timeout = Timeout},
   {ok, NewState}.
 
 handle_call(_Request, _From, State) -> {reply, ok, State}.
 
 handle_cast(_Request, State) -> {noreply, State}.
 
-handle_info(timeout, #state{timeout = Timeout, sources = Sources} = State) ->
-  erlang:send_after(Timeout, self(), timeout),
-
-  Result = maps:from_list(
-    [
-      fun({Name, Fun}) ->
-        {ok, R} = Fun(),
-        {Name, R}
-      end(Source)
-      ||
-      Source <- Sources
-    ]
-  ),
-  lager:info("~p", [Result]),
+handle_info(info_metrics, #state{timeout = Timeout} = State) ->
+  erlang:send_after(Timeout, self(), info_metrics),
+  lager:info("~p", [metrics()]),
   {noreply, State};
 
 handle_info(_Info, State) -> {noreply, State}.
@@ -60,3 +39,15 @@ handle_info(_Info, State) -> {noreply, State}.
 terminate(_Reason, _State) -> ok.
 
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
+
+%%%===================================================================
+%%% internal
+%%%===================================================================
+
+metrics() ->
+  Metrics = [complete, pool, queue, call, request, retry],
+  Tags = [type],
+  lists:append(
+    [{Metric, folsom_metrics:get_metric_value(Metric)} || Metric <- Metrics],
+    [{Tag, folsom_metrics:get_metrics_value(Tag)} || Tag <- Tags]
+  ).

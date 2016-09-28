@@ -12,8 +12,6 @@
 
 -define(SERVER_NAME(JobRef), ?IDENTIFIED_NAME(?MODULE, JobRef)).
 
--define(START_MESSAGE, start).
-
 -record(state, {ref, priority, body, controller_ref, list_ref, children}).
 
 %%%===================================================================
@@ -28,7 +26,7 @@ start_link(Ref, Priority, Body, ControllerRef, ListRef) ->
 %%%===================================================================
 
 init({Ref, Priority, Body, ControllerRef, ListRef}) ->
-  self() ! ?START_MESSAGE,
+  self() ! start,
   NewState = #state{ref = Ref, priority = Priority, body = Body, controller_ref = ControllerRef, list_ref = ListRef},
   {ok, NewState}.
 
@@ -37,7 +35,7 @@ handle_call(_Request, _From, State) -> {reply, ok, State}.
 handle_cast(_Request, State) -> {noreply, State}.
 
 handle_info(
-  ?START_MESSAGE,
+  start,
   #state{
     ref = Ref, priority = Priority, body = {Type, Context}, controller_ref = ControllerRef, list_ref = ListRef
   } = State

@@ -10,7 +10,6 @@
 
 -include("../util/identified_name.hrl").
 
--define(SEND_BLOCK_MESSAGE, send_block).
 -define(SHORT_BLOCK_TIMEOUT, 1000).
 -define(REQUEST_COUNT_BY_CONNECTION, 100).
 
@@ -96,7 +95,7 @@ handle_info(
 handle_info(
   {gun_up, GunConnectionPid, http}, #state{gun_connection_pid = GunConnectionPid} = State
 ) ->
-  self() ! ?SEND_BLOCK_MESSAGE,
+  self() ! send_block,
   NewState = State#state{requests_count_from_up = 0},
   {noreply, NewState};
 
@@ -164,7 +163,7 @@ handle_info(
 %%%===================================================================
 
 handle_info(
-  ?SEND_BLOCK_MESSAGE,
+  send_block,
   #state{
     requester_ref = RequesterRef, gun_connection_pid = GunConnectionPid, requests_in_progress = RequestsInProgress,
     requests_count_from_up = RequestsCountFromUp
@@ -180,7 +179,7 @@ handle_info(
 
   case SuccessCount of
     MaxCount -> ok;
-    SuccessCount -> erlang:send_after(?SHORT_BLOCK_TIMEOUT, self(), ?SEND_BLOCK_MESSAGE)
+    SuccessCount -> erlang:send_after(?SHORT_BLOCK_TIMEOUT, self(), send_block)
   end,
 
   NewState = State#state{requests_in_progress = NewRequestsInProgress, requests_count_from_up = NewRequestsCountFromUp},

@@ -24,7 +24,7 @@ init([]) ->
   {ok, RequesterCount} = application:get_env(requester_count),
   {ok, StatTimeout} = application:get_env(stat_timeout),
 
-  ConveyorJobsInOneTime = util:ceil(RequesterCount / 5),
+  {ok, ConveyorJobsInOneTime} = application:get_env(jobs_in_one_time_count),
 
   Specifications = [
     #{
