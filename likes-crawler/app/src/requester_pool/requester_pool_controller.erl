@@ -28,6 +28,7 @@ set_requester_count(RequesterCount) -> gen_server:cast(?MODULE, {set_requester_c
 
 init(RequesterCount) ->
   folsom_metrics:new_counter(pool),
+  prometheus_counter:new([{name, pool}, {help, "Pool size"}]),
   self() ! update_count,
   NewState = #state{set_count = RequesterCount},
   {ok, NewState}.
@@ -55,6 +56,7 @@ handle_info(
   {ok, _RequesterPid} = requester_pool_children:start_child(RequesterRef),
   erlang:send_after(?CHANGE_REQUESTER_COUNT_TIMEOUT, self(), update_count),
   folsom_metrics:notify({pool, {inc, 1}}),
+  prometheus_counter:inc(pool),
   NewState = State#state{current_count = CurrentCount + 1, requester_ref_items = [RequesterRef | RequesterRefItems]},
   {noreply, NewState};
 

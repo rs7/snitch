@@ -37,9 +37,9 @@ response({response, #{<<"items">> := Items}}, _Context) ->
   lists:append(
     [
       [
-        {get_likes, {PhotoOwnerId, PhotoId, LikesOffset, LikesCount}}
+        {get_likes, {PhotoOwnerId, PhotoId, PageLikesOffset, PageLikesCount}}
         ||
-        {LikesOffset, LikesCount} <- list:params(LikesCount, 1000)
+        {PageLikesOffset, PageLikesCount} <- list:params(LikesCount, 1000)
       ]
       ||
       #{<<"id">> := PhotoId, <<"owner_id">> := PhotoOwnerId, <<"likes">> := #{<<"count">> := LikesCount}} <- Items,
