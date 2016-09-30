@@ -25,6 +25,9 @@ init([]) ->
   {ok, StatTimeout} = application:get_env(stat_timeout),
 
   {ok, ConveyorJobsInOneTime} = application:get_env(jobs_in_one_time_count),
+  {ok, MetricsPort} = application:get_env(metrics_port),
+
+  ElliOpts = [{callback, metrics_http}, {port, MetricsPort}],
 
   Specifications = [
     #{
@@ -41,6 +44,11 @@ init([]) ->
       id => conveyor,
       start => {conveyor, start_link, [ConveyorJobsInOneTime]},
       type => supervisor
+    },
+    #{
+      id => elli,
+      start => {elli, start_link, [ElliOpts]},
+      type => worker
     },
     #{
       id => stat,

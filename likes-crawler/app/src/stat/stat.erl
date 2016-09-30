@@ -21,7 +21,7 @@ start_link(Timeout) -> gen_server:start_link({local, ?MODULE}, ?MODULE, Timeout,
 %%%===================================================================
 
 init(Timeout) ->
-  self() ! info_metrics,
+  %self() ! info_metrics,
   NewState = #state{timeout = Timeout},
   {ok, NewState}.
 
@@ -43,6 +43,8 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%%===================================================================
 %%% internal
 %%%===================================================================
+
+metrics() -> metrics_reader:metrics();
 
 metrics() ->
   Metrics = [complete, pool, queue, call, request, retry],

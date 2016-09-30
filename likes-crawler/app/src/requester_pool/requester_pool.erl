@@ -26,6 +26,10 @@ init(Size) ->
   folsom_metrics:new_counter(request),
   folsom_metrics:new_counter(retry),
 
+  %folsom_metrics:new_histogram(test),
+  %metrics_reader:register(test),
+  metrics_observer:observe(request, request_histogram),
+
   Strategy = #{strategy => one_for_all, intensity => 1, period => 5},
 
   Specifications = [
