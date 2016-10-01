@@ -232,6 +232,13 @@ run_many(GunConnectionPid, RequesterRef, [RequestInfo | RemainingRequestInfos]) 
 
 run_one(GunConnectionPid, RequesterRef, {RequestRef, RequestData}) ->
   StreamRef = connection_lib:request(GunConnectionPid, RequestData),
+
+  %folsom_metrics:new_counter(Method),
+  %folsom_metrics:tag_metric(Method, type),
+  %folsom_metrics:notify({Method, {inc, 1}}),
+
+  folsom_metrics:notify(request, {inc, 1}),
+
   run_request_server(RequesterRef, RequestRef, StreamRef).
 
 run_request_server(RequesterRef, RequestRef, StreamRef) ->

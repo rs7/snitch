@@ -34,12 +34,6 @@ request(GunConnectionPid, {Method, Params}, get, Headers) ->
 request(GunConnectionPid, {Method, Params}, post, Headers) ->
   %lager:debug("request ~p ~p", [Method, Params]),
 
-  folsom_metrics:new_counter(Method),
-  folsom_metrics:tag_metric(Method, type),
-  folsom_metrics:notify({Method, {inc, 1}}),
-
-  folsom_metrics:notify(request, {inc, 1}),
-
   gun:post(
     GunConnectionPid,
     request_lib:path(Method),

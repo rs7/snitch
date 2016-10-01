@@ -1,4 +1,4 @@
--module(metrics_http).
+-module(http_api).
 
 -behaviour(elli_handler).
 
@@ -18,7 +18,7 @@ handle_event(_Event, _Data, _Args) -> ok.
 %%%===================================================================
 
 handle('GET',[<<"metrics">>], _Req) ->
-  Content = [metrics_reader:metrics(), $\n],
+  Content = metrics:prometheus(),
   {ok, [], Content};
 
 handle(_Method, _Path, _Req) -> {404, [], <<"Not Found">>}.
