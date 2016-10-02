@@ -1,0 +1,15 @@
+{
+  application, likes,
+  [
+    {description, "Snitch Likes application"},
+    {vsn, "0.0.2"},
+    {registered, []},
+    {mod, {likes, []}},
+    {applications, [kernel, stdlib, gun, lager, gproc, folsom]},
+    {env, []},
+    {modules, []},
+    {maintainers, []},
+    {licenses, []},
+    {links, []}
+  ]
+}.
