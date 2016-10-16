@@ -8,9 +8,7 @@
 %%% behaviour
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
--include("../util/identified_name.hrl").
-
--define(SERVER_NAME(RequesterRef), ?IDENTIFIED_NAME(?MODULE, RequesterRef)).
+-define(SERVER_NAME(RequesterRef), {via, identifiable, {?MODULE, RequesterRef}}).
 
 -record(state, {reserve = #{}}).
 

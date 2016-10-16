@@ -3,18 +3,21 @@
 -behaviour(supervisor).
 
 %%% api
--export([start_link/1]).
+-export([start_link/1, whereis/1]).
 
 %%% behaviour
 -export([init/1]).
 
--include("../util/identified_name.hrl").
+-define(NAME(RequesterRef), {?MODULE, RequesterRef}).
+-define(SERVER_NAME(RequesterRef), {via, identifiable, ?NAME(RequesterRef)}).
 
 %%%===================================================================
 %%% api
 %%%===================================================================
 
-start_link(RequesterRef) -> supervisor:start_link(?IDENTIFIED_NAME(?MODULE, RequesterRef), ?MODULE, RequesterRef).
+start_link(RequesterRef) -> supervisor:start_link(?SERVER_NAME(RequesterRef), ?MODULE, RequesterRef).
+
+whereis(RequesterRef) -> identifiable:whereis_name(?NAME(RequesterRef)).
 
 %%%===================================================================
 %%% behaviour

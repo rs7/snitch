@@ -8,9 +8,7 @@
 %%% behaviour
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
--include("../../util/identified_name.hrl").
-
--define(SERVER_NAME(JobRef), ?IDENTIFIED_NAME(?MODULE, JobRef)).
+-define(SERVER_NAME(JobRef), {via, identifiable, {?MODULE, JobRef}}).
 
 -record(state, {ref, priority, body, controller_ref, list_ref, children}).
 

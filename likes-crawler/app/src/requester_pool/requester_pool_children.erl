@@ -8,10 +8,6 @@
 %%% behaviour
 -export([init/1]).
 
--include("../util/identified_name.hrl").
-
--define(REQUESTER_MODULE, requester).
-
 %%%===================================================================
 %%% api
 %%%===================================================================
@@ -20,7 +16,7 @@ start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 start_child(RequesterRef) -> supervisor:start_child(?MODULE, [RequesterRef]).
 
-terminate_child(RequesterRef) -> supervisor:terminate_child(?MODULE, ?IDENTIFIED_PID(?REQUESTER_MODULE, RequesterRef)).
+terminate_child(RequesterRef) -> supervisor:terminate_child(?MODULE, requester:whereis(RequesterRef)).
 
 %%%===================================================================
 %%% behaviour
@@ -32,7 +28,7 @@ init([]) ->
   Specifications = [
     #{
       id => requester,
-      start => {?REQUESTER_MODULE, start_link, []},
+      start => {requester, start_link, []},
       type => worker
     }
   ],

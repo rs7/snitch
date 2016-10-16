@@ -3,14 +3,13 @@
 -behaviour(supervisor).
 
 %%% api
--export([start_link/5, stop/2]).
+-export([start_link/5, stop/2, whereis/1]).
 
 %%% behaviour
 -export([init/1]).
 
--include("../../util/identified_name.hrl").
-
--define(SERVER_NAME(JobRef), ?IDENTIFIED_NAME(?MODULE, JobRef)).
+-define(NAME(JobRef), {?MODULE, JobRef}).
+-define(SERVER_NAME(JobRef), {via, identifiable, ?NAME(JobRef)}).
 
 %%%===================================================================
 %%% api
@@ -19,9 +18,9 @@
 start_link(Ref, Priority, Body, ControllerRef, ListRef) ->
   supervisor:start_link(?SERVER_NAME(Ref), ?MODULE, {Ref, Priority, Body, ControllerRef, ListRef}).
 
-stop(Ref, ListRef) ->
-  Pid = ?IDENTIFIED_PID(?MODULE, Ref),
-  job_list:terminate_job(ListRef, Pid).
+stop(Ref, ListRef) -> job_list:terminate_job(ListRef, Ref).
+
+whereis(Ref) -> identifiable:whereis_name(?NAME(Ref)).
 
 %%%===================================================================
 %%% behaviour

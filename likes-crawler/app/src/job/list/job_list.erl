@@ -8,9 +8,7 @@
 %%% behaviour
 -export([init/1]).
 
--include("../../util/identified_name.hrl").
-
--define(SERVER_NAME(ListRef), ?IDENTIFIED_NAME(?MODULE, ListRef)).
+-define(SERVER_NAME(ListRef), {via, identifiable, {?MODULE, ListRef}}).
 
 %%%===================================================================
 %%% api
@@ -22,7 +20,7 @@ start_job(ListRef, Ref, Priority, Body, ControllerRef) ->
   JobArgs = [Ref, Priority, Body, ControllerRef, ListRef],
   supervisor:start_child(?SERVER_NAME(ListRef), JobArgs).
 
-terminate_job(ListRef, JobPid) -> supervisor:terminate_child(?SERVER_NAME(ListRef), JobPid).
+terminate_job(ListRef, JobRef) -> supervisor:terminate_child(?SERVER_NAME(ListRef), job:whereis(JobRef)).
 
 %%%===================================================================
 %%% behaviour
