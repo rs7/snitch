@@ -1,7 +1,7 @@
 -module(util).
 
 %%% api
--export([ceil/1, parallel/2, list_split/2, list_partition/2, send/2]).
+-export([ceil/1, parallel/2, list_split/2, list_partition/2, send/2, whereis_name/1]).
 
 %%%===================================================================
 %%% api
@@ -39,3 +39,7 @@ send({via, Module, Name}, Info) -> Module:send(Name, Info);
 send({global, Name}, Info) -> send({via, global, Name}, Info);
 send({local, Name}, Info) -> send({via, erlang, Name}, Info);
 send(Name, Info) -> send({local, Name}, Info).
+
+whereis_name({via, Module, Name}) -> Module:whereis_name(Name);
+whereis_name({global, Name}) -> global:whereis_name(Name);
+whereis_name({local, Name}) -> whereis(Name).
