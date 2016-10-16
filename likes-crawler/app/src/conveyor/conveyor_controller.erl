@@ -3,7 +3,7 @@
 -behaviour(gen_server).
 
 %%% api
--export([start_link/1, is_target_user/1]).
+-export([start_link/1]).
 
 %%% behaviour
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -17,8 +17,6 @@
 %%%===================================================================
 
 start_link(ListRef) -> gen_server:start_link({local, ?MODULE}, ?MODULE, ListRef, []).
-
-is_target_user(Liker) -> lists:member(Liker, [53083705, 38940203, 41362423, 1052662]).
 
 %%%===================================================================
 %%% behaviour

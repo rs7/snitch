@@ -9,6 +9,4 @@
 %%% behavior
 %%%===================================================================
 
-process(Priority, {Liker, Owner, Photo}) ->
-  lager:info("id~B ♥ photo~B_~B", [Liker, Owner, Photo]),
-  {ok, []}.
+process(Priority, {Owner, Photo, Likers}) -> {ok, []}.

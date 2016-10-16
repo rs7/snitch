@@ -31,8 +31,4 @@ request({OwnerId, PhotoId, Offset, Count}) ->
 response({error, 15}, _Context) -> [];
 
 response({response, #{<<"items">> := Likers}}, {OwnerId, PhotoId, _Offset, _Count}) ->
-  [
-    {save, {Liker, OwnerId, PhotoId}}
-    ||
-    Liker <- Likers, conveyor_controller:is_target_user(Liker) %temp
-  ].
+  [{save, {OwnerId, PhotoId, Likers}}].
