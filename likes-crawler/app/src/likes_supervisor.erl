@@ -22,12 +22,6 @@ init([]) ->
   Strategy = #{strategy => one_for_all, intensity => 5, period => 1},
 
   {ok, RequesterCount} = application:get_env(requester_count),
-  {ok, MetricsTimeout} = application:get_env(metrics_timeout),
-
-  {ok, ConveyorJobsInOneTime} = application:get_env(jobs_in_one_time_count),
-  {ok, HttpApiPort} = application:get_env(http_api_port),
-
-  ElliOpts = [{callback, http_api}, {port, HttpApiPort}],
 
   Specifications = [
     #{
@@ -42,18 +36,8 @@ init([]) ->
     },
     #{
       id => conveyor,
-      start => {conveyor, start_link, [ConveyorJobsInOneTime]},
+      start => {conveyor, start_link, []},
       type => supervisor
-    },
-    #{
-      id => elli,
-      start => {elli, start_link, [ElliOpts]},
-      type => worker
-    },
-    #{
-      id => metrics,
-      start => {metrics, start_link, [MetricsTimeout]},
-      type => worker
     }
   ],
 

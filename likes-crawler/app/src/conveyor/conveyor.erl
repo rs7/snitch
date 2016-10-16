@@ -3,7 +3,7 @@
 -behaviour(supervisor).
 
 %%% api
--export([start_link/1]).
+-export([start_link/0]).
 
 %%% behaviour
 -export([init/1]).
@@ -12,13 +12,13 @@
 %%% api
 %%%===================================================================
 
-start_link(JobsInOneTime) -> supervisor:start_link({local, ?MODULE}, ?MODULE, JobsInOneTime).
+start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 %%%===================================================================
 %%% behaviour
 %%%===================================================================
 
-init(JobsInOneTime) ->
+init([]) ->
   Strategy = #{strategy => one_for_all, intensity => 1, period => 5},
 
   ListRef = make_ref(),
@@ -31,7 +31,7 @@ init(JobsInOneTime) ->
     },
     #{
       id => controller,
-      start => {conveyor_controller, start_link, [ListRef, JobsInOneTime]},
+      start => {conveyor_controller, start_link, [ListRef]},
       type => worker
     }
   ],

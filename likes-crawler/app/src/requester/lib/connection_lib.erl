@@ -32,8 +32,6 @@ request(GunConnectionPid, {Method, Params}, get, Headers) ->
   );
 
 request(GunConnectionPid, {Method, Params}, post, Headers) ->
-  %lager:debug("request ~p ~p", [Method, Params]),
-
   gun:post(
     GunConnectionPid,
     request_lib:path(Method),

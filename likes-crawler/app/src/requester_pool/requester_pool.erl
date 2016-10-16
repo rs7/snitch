@@ -23,9 +23,6 @@ set_size(Size) -> requester_pool_controller:set_requester_count(Size).
 %%%===================================================================
 
 init(Size) ->
-  folsom_metrics:new_counter(request),
-  folsom_metrics:new_counter(retry),
-
   Strategy = #{strategy => one_for_all, intensity => 1, period => 5},
 
   Specifications = [

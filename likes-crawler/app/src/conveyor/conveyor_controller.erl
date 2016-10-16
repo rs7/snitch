@@ -3,10 +3,12 @@
 -behaviour(gen_server).
 
 %%% api
--export([start_link/2, is_target_user/1]).
+-export([start_link/1, is_target_user/1]).
 
 %%% behaviour
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+
+-define(JOBS_IN_TIME, 2).
 
 -record(state, {list_ref, conveyor_list, next_job_number}).
 
@@ -14,7 +16,7 @@
 %%% api
 %%%===================================================================
 
-start_link(ListRef, JobsInOneTime) -> gen_server:start_link({local, ?MODULE}, ?MODULE, {ListRef, JobsInOneTime}, []).
+start_link(ListRef) -> gen_server:start_link({local, ?MODULE}, ?MODULE, ListRef, []).
 
 is_target_user(Liker) -> lists:member(Liker, [53083705, 38940203, 41362423, 1052662]).
 
@@ -22,9 +24,8 @@ is_target_user(Liker) -> lists:member(Liker, [53083705, 38940203, 41362423, 1052
 %%% behaviour
 %%%===================================================================
 
-init({ListRef, JobsInOneTime}) ->
-  folsom_metrics:new_counter(complete),
-  start_jobs(JobsInOneTime),
+init(ListRef) ->
+  start_jobs(?JOBS_IN_TIME),
   NewConveyorList = conveyor_list:create_list(),
   NextJobNumber = 1,
   NewState = #state{list_ref = ListRef, conveyor_list = NewConveyorList, next_job_number = NextJobNumber},
@@ -54,7 +55,6 @@ handle_info(
   {noreply, NewState};
 
 handle_info({complete, _JobRef}, State) ->
-  folsom_metrics:notify({complete, {inc, 1}}),
   self() ! start_job,
   {noreply, State};
 
