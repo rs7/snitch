@@ -1,1 +1,1 @@
-(if exist log rmdir /S /Q log) && cls && rebar3 shell
+(if exist log rmdir /S /Q log) && cls && rebar3 shell --apps likes
