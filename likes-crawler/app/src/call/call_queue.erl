@@ -3,12 +3,10 @@
 -behaviour(gen_server).
 
 %%% api
--export([start_link/0, call/2, add/3, take/1, metrics/0]).
+-export([start_link/0, call/2, add/3, take/1]).
 
 %%% behaviour
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
-
--define(SERVER_NAME, {global, ?MODULE}).
 
 -record(state, {data}).
 
@@ -16,15 +14,13 @@
 %%% api
 %%%===================================================================
 
-start_link() -> gen_server:start_link(?SERVER_NAME, ?MODULE, [], []).
+start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
-call(Priority, RequestData) -> gen_server:call(?SERVER_NAME, {call, Priority, RequestData}, infinity).
+call(Priority, RequestData) -> gen_server:call(?MODULE, {call, Priority, RequestData}, infinity).
 
-add(Priority, RequestData, From) -> gen_server:cast(?SERVER_NAME, {add, Priority, RequestData, From}).
+add(Priority, RequestData, From) -> gen_server:cast(?MODULE, {add, Priority, RequestData, From}).
 
-take(Count) -> gen_server:call(?SERVER_NAME, {take, Count}, infinity).
-
-metrics() -> gen_server:call(?SERVER_NAME, metrics, infinity).
+take(Count) -> gen_server:call(?MODULE, {take, Count}, infinity).
 
 %%%===================================================================
 %%% behaviour
@@ -35,8 +31,7 @@ init([]) ->
   NewState = #state{data = NewData},
   {ok, NewState}.
 
-handle_call({call, Priority, RequestData}, From, State) ->
-  handle_cast({add, Priority, RequestData, From}, State);
+handle_call({call, Priority, RequestData}, From, State) -> handle_cast({add, Priority, RequestData, From}, State);
 
 handle_call({take, Count}, _From, #state{data = Data} = State) ->
   {Items, NewData} = call_queue_data:take(Count, Data),
