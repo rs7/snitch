@@ -4,13 +4,13 @@
 -behaviour(gen_request_job).
 
 %%% behaviour
--export([process/2, request/1, response/2]).
+-export([type/0, request/1, response/2]).
 
 %%%===================================================================
 %%% behaviour
 %%%===================================================================
 
-process(Priority, Context) -> gen_request_job:process(?MODULE, Priority, Context).
+type() -> request.
 
 request(User) ->
   {

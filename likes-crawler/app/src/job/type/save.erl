@@ -1,12 +1,15 @@
 -module(save).
 
 -behaviour(gen_job).
+-behaviour(gen_query_job).
 
-%%% behavior
--export([process/2]).
+%%% behaviour
+-export([type/0, query/1]).
 
 %%%===================================================================
-%%% behavior
+%%% behaviour
 %%%===================================================================
 
-process(Priority, {Owner, Photo, Likers}) -> {ok, []}.
+type() -> query.
+
+query({Owner, Photo, Likers}) -> <<"INSERT QUERY">>.

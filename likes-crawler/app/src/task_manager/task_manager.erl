@@ -1,12 +1,15 @@
--module(gen_job).
+-module(task_manager).
 
 %%% api
--export([behaviour_info/1]).
+-export([]).
 
 %%%===================================================================
 %%% api
 %%%===================================================================
 
-behaviour_info(callbacks) -> [{type, 0}];
+execute(Task) -> ok.
 
-behaviour_info(_Other) -> undefined.
+reserve(Type, Count) -> ok.
+
+release(ReserveRef, Result) -> ok.
+

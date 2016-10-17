@@ -10,7 +10,7 @@
 
 -define(SERVER_NAME(RequesterRef), {via, identifiable, {?MODULE, RequesterRef}}).
 
--record(state, {reserve = #{}}).
+-record(state, {}).
 
 %%%===================================================================
 %%% api
@@ -27,28 +27,17 @@ release(RequesterRef, RequestRef, Result) -> gen_server:cast(?SERVER_NAME(Reques
 %%%===================================================================
 
 init([]) ->
-  NewReserve = #{},
-  NewState = #state{reserve = NewReserve},
+  NewState = #state{},
   {ok, NewState}.
 
 %%%===================================================================
 %%% reserve
 %%%===================================================================
 
-handle_call({reserve, Count}, _From, #state{reserve = Reserve} = State) ->
+handle_call({reserve, Count}, _From, #state{} = State) ->
+  Result = [],
 
-  {ok, Items} = call_queue:take(Count),
-
-  Result = [{RequestRef, RequestData} || {_Priority, {RequestRef, RequestData, _RequestFrom}} <- Items],
-
-  NewReserve = maps:merge(
-    Reserve,
-    maps:from_list(
-      [{RequestRef, {Priority, RequestData, From}} || {Priority, {RequestRef, RequestData, From}} <- Items]
-    )
-  ),
-
-  NewState = State#state{reserve = NewReserve},
+  NewState = State#state{},
   {reply, {ok, Result}, NewState};
 
 %%%===================================================================
@@ -59,26 +48,13 @@ handle_call(_Request, _From, State) -> {reply, ok, State}.
 %%% release
 %%%===================================================================
 
-handle_cast({release, RequestRef, {result, Result}}, #state{reserve = Reserve} = State) ->
-  {Item, NewReserve} = maps:take(RequestRef, Reserve),
-
-  {_Priority, _RequestData, RequestFrom} = Item,
-
-  gen_server:reply(RequestFrom, {ok, Result}),
-
-  NewState = State#state{reserve = NewReserve},
+handle_cast({release, RequestRef, {result, Result}}, #state{} = State) ->
+  NewState = State#state{},
   {noreply, NewState};
 
-handle_cast({release, RequestRef, {retry, Reason}}, #state{reserve = Reserve} = State) ->
-  {Item, NewReserve} = maps:take(RequestRef, Reserve),
-
-  lager:warning("retry ~p ~p", [Reason, Item]),
-
-  {Priority, RequestData, From} = Item,
-
-  call_queue:add(Priority, RequestData, From),
-
-  NewState = State#state{reserve = NewReserve},
+handle_cast({release, RequestRef, {retry, Reason}}, #state{} = State) ->
+  lager:warning("retry ~p", [Reason]),
+  NewState = State#state{},
   {noreply, NewState};
 
 %%%===================================================================

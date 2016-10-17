@@ -25,19 +25,9 @@ init([]) ->
 
   Specifications = [
     #{
-      id => call_queue,
-      start => {call_queue, start_link, []},
-      type => worker
-    },
-    #{
       id => requester_pool,
       start => {requester_pool, start_link, [RequesterCount]},
       type => worker
-    },
-    #{
-      id => conveyor,
-      start => {conveyor, start_link, []},
-      type => supervisor
     }
   ],
 

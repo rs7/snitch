@@ -107,9 +107,9 @@ handle_info(
   {gun_error, GunConnectionPid, StreamRef, Reason},
   #state{gun_connection_pid = GunConnectionPid, requests_in_progress = RequestsInProgress} = State
 ) ->
-  {{RequestPid, RequestRef}, NewRequestsInProgress} = maps:take(StreamRef, RequestsInProgress),
+  {RequestRef, NewRequestsInProgress} = maps:take(StreamRef, RequestsInProgress),
 
-  request:error(RequestPid, RequestRef, {gun_stream_error, Reason}),
+  request:error(RequestRef, {gun_stream_error, Reason}),
 
   NewState = State#state{requests_in_progress = NewRequestsInProgress},
   {noreply, NewState};
@@ -122,17 +122,17 @@ handle_info(
   {gun_response, GunConnectionPid, StreamRef, nofin, Status, _Headers},
   #state{gun_connection_pid = GunConnectionPid, requests_in_progress = RequestsInProgress} = State
 ) ->
-  {RequestPid, RequestRef} = maps:get(StreamRef, RequestsInProgress),
-  request:status(RequestPid, RequestRef, Status),
+  RequestRef = maps:get(StreamRef, RequestsInProgress),
+  request:status(RequestRef, Status),
   {noreply, State};
 
 handle_info(
   {gun_response, GunConnectionPid, StreamRef, fin, Status, _Headers},
   #state{gun_connection_pid = GunConnectionPid, requests_in_progress = RequestsInProgress} = State
 ) ->
-  {{RequestPid, RequestRef}, NewRequestsInProgress} = maps:take(StreamRef, RequestsInProgress),
-  request:status(RequestPid, RequestRef, Status),
-  request:fin(RequestPid, RequestRef),
+  {RequestRef, NewRequestsInProgress} = maps:take(StreamRef, RequestsInProgress),
+  request:status(RequestRef, Status),
+  request:fin(RequestRef),
   NewState = State#state{requests_in_progress = NewRequestsInProgress},
   {noreply, NewState};
 
@@ -144,17 +144,17 @@ handle_info(
   {gun_data, GunConnectionPid, StreamRef, nofin, Data},
   #state{gun_connection_pid = GunConnectionPid, requests_in_progress = RequestsInProgress} = State
 ) ->
-  {RequestPid, RequestRef} = maps:get(StreamRef, RequestsInProgress),
-  request:data(RequestPid, RequestRef, Data),
+  RequestRef = maps:get(StreamRef, RequestsInProgress),
+  request:data(RequestRef, Data),
   {noreply, State};
 
 handle_info(
   {gun_data, GunConnectionPid, StreamRef, fin, Data},
   #state{gun_connection_pid = GunConnectionPid, requests_in_progress = RequestsInProgress} = State
 ) ->
-  {{RequestPid, RequestRef}, NewRequestsInProgress} = maps:take(StreamRef, RequestsInProgress),
-  request:data(RequestPid, RequestRef, Data),
-  request:fin(RequestPid, RequestRef),
+  {RequestRef, NewRequestsInProgress} = maps:take(StreamRef, RequestsInProgress),
+  request:data(RequestRef, Data),
+  request:fin(RequestRef),
   NewState = State#state{requests_in_progress = NewRequestsInProgress},
   {noreply, NewState};
 
@@ -221,9 +221,6 @@ run_requests(RequesterRef, GunConnectionPid, Count) ->
 
 run_many(_GunConnectionPid, _RequesterRef, []) -> [];
 
-run_many(GunConnectionPid, RequesterRef, [RequestInfo]) ->
-  [run_one(GunConnectionPid, RequesterRef, RequestInfo)];
-
 run_many(GunConnectionPid, RequesterRef, [RequestInfo | RemainingRequestInfos]) -> [
   run_one(GunConnectionPid, RequesterRef, RequestInfo)
   |
@@ -235,13 +232,13 @@ run_one(GunConnectionPid, RequesterRef, {RequestRef, RequestData}) ->
   run_request_server(RequesterRef, RequestRef, StreamRef).
 
 run_request_server(RequesterRef, RequestRef, StreamRef) ->
-  {ok, RequestPid} = request:start_link(RequesterRef, RequestRef),
-  {StreamRef, {RequestPid, RequestRef}}.
+  request:start_link(RequestRef, RequesterRef),
+  {StreamRef, RequestRef}.
 
 %%%===================================================================
 %%% requests_in_progress_error
 %%%===================================================================
 
 requests_in_progress_error(RequestsInProgress, Reason) -> [
-  request:error(RequestPid, RequestRef, Reason) || {RequestPid, RequestRef} <- maps:values(RequestsInProgress)
+  request:error(RequestRef, Reason) || RequestRef <- maps:values(RequestsInProgress)
 ].

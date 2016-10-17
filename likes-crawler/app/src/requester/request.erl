@@ -3,14 +3,16 @@
 -behaviour(gen_server).
 
 %%% api
--export([start_link/2, status/3, data/3, fin/2, error/3]).
+-export([start_link/2, status/2, data/2, fin/1, error/2]).
 
 %%% behaviour
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
+-define(SERVER_NAME(RequestRef), {via, identifiable, {?MODULE, RequestRef}}).
+
 -record(state, {
-  requester_ref,
   request_ref,
+  requester_ref,
   status,
   data
 }).
@@ -19,47 +21,44 @@
 %%% api
 %%%===================================================================
 
-start_link(RequesterRef, RequestRef) -> gen_server:start_link(?MODULE, {RequesterRef, RequestRef}, []).
+start_link(RequestRef, RequesterRef) -> gen_server:start_link(?SERVER_NAME(RequestRef), {RequestRef, RequesterRef}, []).
 
-status(RequestPid, RequestRef, Status) -> gen_server:cast(RequestPid, {status, RequestRef, Status}).
+status(RequestRef, Status) -> gen_server:cast(?SERVER_NAME(RequestRef), {status, Status}).
 
-data(RequestPid, RequestRef, Data) -> gen_server:cast(RequestPid, {data, RequestRef, Data}).
+data(RequestRef, Data) -> gen_server:cast(?SERVER_NAME(RequestRef), {data, Data}).
 
-fin(RequestPid, RequestRef) -> gen_server:cast(RequestPid, {fin, RequestRef}).
+fin(RequestRef) -> gen_server:cast(?SERVER_NAME(RequestRef), fin).
 
-error(RequestPid, RequestRef, Reason) -> gen_server:cast(RequestPid, {error, RequestRef, Reason}).
+error(RequestRef, Reason) -> gen_server:cast(?SERVER_NAME(RequestRef), {error, Reason}).
 
 %%%===================================================================
 %%% behaviour
 %%%===================================================================
 
-init({RequesterRef, RequestRef}) ->
+init({RequestRef, RequesterRef}) ->
   NewState = #state{
-    requester_ref = RequesterRef,
-    request_ref = RequestRef
+    request_ref = RequestRef,
+    requester_ref = RequesterRef
   },
   {ok, NewState}.
 
 handle_call(_Request, _From, State) -> {reply, ok, State}.
 
-handle_cast({status, RequestRef, 200 = Status}, #state{request_ref = RequestRef} = State) ->
+handle_cast({status, 200 = Status}, State) ->
   NewState = State#state{status = Status, data = <<>>},
   {noreply, NewState};
 
-handle_cast({status, RequestRef, Status}, #state{request_ref = RequestRef} = State) ->
+handle_cast({status, Status}, State) ->
   NewState = State#state{status = Status},
   {noreply, NewState};
 
-handle_cast({data, RequestRef, Data}, #state{request_ref = RequestRef, status = 200, data = Accumulator} = State) ->
+handle_cast({data, Data}, #state{status = 200, data = Accumulator} = State) ->
   NewState = State#state{data = <<Accumulator/binary, Data/binary>>},
   {noreply, NewState};
 
-handle_cast({data, RequestRef, _Data}, #state{request_ref = RequestRef, status = _Status} = State) ->
-  {noreply, State};
+handle_cast({data, _Data}, #state{status = _Status} = State) -> {noreply, State};
 
-handle_cast(
-  {fin, RequestRef}, #state{requester_ref = RequesterRef, request_ref = RequestRef, status = 200, data = Data} = State
-) ->
+handle_cast(fin, #state{request_ref = RequestRef, requester_ref = RequesterRef, status = 200, data = Data} = State) ->
   Result = case response_lib:decode_body(Data) of
     {ok, {response, Response}} -> {result, {response, Response}};
 
@@ -75,14 +74,12 @@ handle_cast(
   requester_controller:release(RequesterRef, RequestRef, Result),
   {stop, normal, State};
 
-handle_cast(
-  {fin, RequestRef}, #state{requester_ref = RequesterRef, request_ref = RequestRef, status = Status} = State
-) ->
+handle_cast(fin, #state{request_ref = RequestRef, requester_ref = RequesterRef, status = Status} = State) ->
   Result = {retry, {http_status_error, Status}},
   requester_controller:release(RequesterRef, RequestRef, Result),
   {stop, normal, State};
 
-handle_cast({error, RequestRef, Reason}, #state{requester_ref = RequesterRef, request_ref = RequestRef} = State) ->
+handle_cast({error, Reason}, #state{request_ref = RequestRef, requester_ref = RequesterRef} = State) ->
   Result = {retry, Reason},
   requester_controller:release(RequesterRef, RequestRef, Result),
   {stop, normal, State};
