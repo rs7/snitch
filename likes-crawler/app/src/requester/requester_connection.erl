@@ -216,7 +216,7 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%%===================================================================
 
 run_requests(RequesterRef, GunConnectionPid, Count) ->
-  {ok, RequestInfos} = requester_controller:reserve(RequesterRef, Count),
+  {ok, RequestInfos} = requester_controller:get(RequesterRef, Count),
   run_many(GunConnectionPid, RequesterRef, RequestInfos).
 
 run_many(_GunConnectionPid, _RequesterRef, []) -> [];
@@ -229,9 +229,6 @@ run_many(GunConnectionPid, RequesterRef, [RequestInfo | RemainingRequestInfos]) 
 
 run_one(GunConnectionPid, RequesterRef, {RequestRef, RequestData}) ->
   StreamRef = connection_lib:request(GunConnectionPid, RequestData),
-  run_request_server(RequesterRef, RequestRef, StreamRef).
-
-run_request_server(RequesterRef, RequestRef, StreamRef) ->
   request:start_link(RequestRef, RequesterRef),
   {StreamRef, RequestRef}.
 

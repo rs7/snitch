@@ -21,7 +21,8 @@
 %%% api
 %%%===================================================================
 
-start_link(RequestRef, RequesterRef) -> gen_server:start_link(?SERVER_NAME(RequestRef), {RequestRef, RequesterRef}, []).
+start_link(RequestRef, RequesterRef) ->
+  gen_server:start_link(?SERVER_NAME(RequestRef), ?MODULE, {RequestRef, RequesterRef}, []).
 
 status(RequestRef, Status) -> gen_server:cast(?SERVER_NAME(RequestRef), {status, Status}).
 
@@ -59,7 +60,7 @@ handle_cast({data, Data}, #state{status = 200, data = Accumulator} = State) ->
 handle_cast({data, _Data}, #state{status = _Status} = State) -> {noreply, State};
 
 handle_cast(fin, #state{request_ref = RequestRef, requester_ref = RequesterRef, status = 200, data = Data} = State) ->
-  Result = case response_lib:decode_body(Data) of
+  Return = case response_lib:decode_body(Data) of
     {ok, {response, Response}} -> {result, {response, Response}};
 
     {ok, {error, 10}} -> {retry, {vk_error, 10}};
@@ -71,17 +72,19 @@ handle_cast(fin, #state{request_ref = RequestRef, requester_ref = RequesterRef, 
     {error, Reason} -> {retry, {decode_error, Reason}}
   end,
 
-  requester_controller:release(RequesterRef, RequestRef, Result),
+  case Return of
+    {result, Result} -> requester_controller:result(RequesterRef, RequestRef, Result);
+    {retry, Reason} -> requester_controller:retry(RequesterRef, RequestRef, Reason)
+  end,
+
   {stop, normal, State};
 
 handle_cast(fin, #state{request_ref = RequestRef, requester_ref = RequesterRef, status = Status} = State) ->
-  Result = {retry, {http_status_error, Status}},
-  requester_controller:release(RequesterRef, RequestRef, Result),
+  requester_controller:retry(RequesterRef, RequestRef, {http_status_error, Status}),
   {stop, normal, State};
 
 handle_cast({error, Reason}, #state{request_ref = RequestRef, requester_ref = RequesterRef} = State) ->
-  Result = {retry, Reason},
-  requester_controller:release(RequesterRef, RequestRef, Result),
+  requester_controller:retry(RequesterRef, RequestRef, Reason),
   {stop, normal, State};
 
 handle_cast(_Request, State) -> {noreply, State}.
