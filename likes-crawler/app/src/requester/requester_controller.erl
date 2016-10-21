@@ -10,7 +10,7 @@
 
 -define(SERVER_NAME(RequesterRef), {via, identifiable, {?MODULE, RequesterRef}}).
 
--record(state, {jobs = #{}, requests = #{}, cache = []}).
+-record(state, {jobs = #{}}).
 
 %%%===================================================================
 %%% api
@@ -38,21 +38,19 @@ init([]) ->
 
 handle_call(
   {get, Count}, _From,
-  #state{jobs = Jobs, requests = Requests, cache = Cache} = State
+  #state{jobs = Jobs} = State
 ) ->
-  {Cached, NewCache} = util:list_split(Cache, Count),
+  JobList = task_manager:reserve(request, Count),
 
-  Reserved = task_manager:reserve(request, Count - length(Cached)),
+  RequestRefList = [make_ref() || _ <- JobList],
+  RequestDataList = [request_data(JobData) || {_JobRef, JobData} <- JobList],
 
-  JobList = lists:append(Cached, Reserved),
+  RequestInfoList = lists:zip(RequestRefList, RequestDataList),
 
-  CreatedRequests = [create_request(JobData) || {_JobRef, JobData} <- JobList],
+  NewJobs = maps:merge(Jobs, maps:from_list(lists:zip(RequestRefList, JobList))),
 
-  NewJobs = maps:merge(Jobs, maps:from_list(Reserved)),
-  NewRequests = maps:merge(Requests, maps:from_list(CreatedRequests)),
-
-  NewState = State#state{jobs = NewJobs, requests = NewRequests, cache = NewCache},
-  {reply, {ok, CreatedRequests}, NewState};
+  NewState = State#state{jobs = NewJobs},
+  {reply, {ok, RequestInfoList}, NewState};
 
 %%%===================================================================
 
@@ -70,14 +68,14 @@ handle_cast({result, RequestRef, Result}, #state{jobs = Jobs} = State) ->
   NewState = State#state{jobs = NewJobs},
   {noreply, NewState};
 
-handle_cast({retry, RequestRef, Reason}, #state{jobs = Jobs, cache = Cache} = State) ->
+handle_cast({retry, RequestRef, Reason}, #state{jobs = Jobs} = State) ->
   lager:warning("retry ~p", [Reason]),
 
-  {{JobRef, JobData}, NewJobs} = maps:take(RequestRef, Jobs),
+  {{JobRef, _JobData}, NewJobs} = maps:take(RequestRef, Jobs),
 
-  NewCache = [{JobRef, JobData}] ++ Cache,
+  task_manager:retrieve(JobRef),
 
-  NewState = State#state{jobs = NewJobs, cache = NewCache},
+  NewState = State#state{jobs = NewJobs},
   {noreply, NewState};
 
 %%%===================================================================
@@ -94,9 +92,6 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%% internal
 %%%===================================================================
 
-create_request({Type, Args}) ->
-  RequestRef = make_ref(),
-  RequestData = Type:request(Args),
-  {RequestRef, RequestData}.
+request_data({Type, Args}) -> Type:request(Args).
 
 process_response({Type, Args}, Result) -> Type:response(Result, Args).
