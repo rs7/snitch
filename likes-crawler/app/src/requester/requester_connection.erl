@@ -217,15 +217,13 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
 run_requests(RequesterRef, GunConnectionPid, Count) ->
   {ok, RequestInfos} = requester_controller:get(RequesterRef, Count),
-  run_many(GunConnectionPid, RequesterRef, RequestInfos).
+  run_many(GunConnectionPid, RequesterRef, RequestInfos, []).
 
-run_many(_GunConnectionPid, _RequesterRef, []) -> [];
+run_many(_GunConnectionPid, _RequesterRef, [], Acc) -> Acc;
 
-run_many(GunConnectionPid, RequesterRef, [RequestInfo | RemainingRequestInfos]) -> [
-  run_one(GunConnectionPid, RequesterRef, RequestInfo)
-  |
-  run_many(GunConnectionPid, RequesterRef, RemainingRequestInfos)
-].
+run_many(GunConnectionPid, RequesterRef, [RequestInfo | RemainingRequestInfos], Acc) ->
+  Result = run_one(GunConnectionPid, RequesterRef, RequestInfo),
+  run_many(GunConnectionPid, RequesterRef, RemainingRequestInfos, [Result | Acc]).
 
 run_one(GunConnectionPid, RequesterRef, {RequestRef, RequestData}) ->
   StreamRef = connection_lib:request(GunConnectionPid, RequestData),

@@ -40,7 +40,7 @@ handle_call(
   {get, Count}, _From,
   #state{jobs = Jobs} = State
 ) ->
-  JobList = task_manager:reserve(request, Count),
+  {ok, JobList} = task_manager:reserve(request, Count),
 
   RequestRefList = [make_ref() || _ <- JobList],
   RequestDataList = [request_data(JobData) || {_JobRef, JobData} <- JobList],
@@ -63,7 +63,7 @@ handle_call(_Request, _From, State) -> {reply, ok, State}.
 handle_cast({result, RequestRef, Result}, #state{jobs = Jobs} = State) ->
   {{JobRef, JobData}, NewJobs} = maps:take(RequestRef, Jobs),
 
-  task_manager:release(JobRef, process_response(JobData, Result)),
+  task_manager:release(JobRef, {ok, process_response(JobData, Result)}),
 
   NewState = State#state{jobs = NewJobs},
   {noreply, NewState};
@@ -73,7 +73,7 @@ handle_cast({retry, RequestRef, Reason}, #state{jobs = Jobs} = State) ->
 
   {{JobRef, _JobData}, NewJobs} = maps:take(RequestRef, Jobs),
 
-  task_manager:retrieve(JobRef),
+  task_manager:release(JobRef, retrieve),
 
   NewState = State#state{jobs = NewJobs},
   {noreply, NewState};

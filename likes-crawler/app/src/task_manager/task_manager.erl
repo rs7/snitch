@@ -1,22 +1,23 @@
 -module(task_manager).
 
 %%% api
--export([reserve/2, release/2, retrieve/1]).
+-export([start/0, reserve/2, release/2, create_database/0]).
 
 %%%===================================================================
 %%% api
 %%%===================================================================
 
-create(JobData) -> ok.
+%%Мятеж на старом судне,
+%%Как чья-то напасть.
+%%Ворвалась в наши будни
+%%Мятежная власть.
 
-reserve(request, Count) -> [
-  begin
-    JobRef = make_ref(),
-    JobData = {get_friends, rand:uniform(390000000)},
-    {JobRef, JobData}
-  end || _ <- lists:seq(1, Count)
-].
+start() -> task_database:start().
 
-release(JobRef, Result) -> ok. %lager:debug("release job ~p", [JobRef]).
+reserve(Type, Count) -> ok.
 
-retrieve(JobRef) -> lager:debug("retrieve job ~p", [JobRef]).
+release(JobRef, {ok, Result}) -> ok;
+
+release(JobRef, retrieve) -> ok.
+
+create_database() -> task_database:create().

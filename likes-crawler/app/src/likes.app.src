@@ -5,7 +5,7 @@
     {vsn, "0.0.2"},
     {registered, []},
     {mod, {likes, []}},
-    {applications, [kernel, stdlib, gun, lager, gproc]},
+    {applications, [kernel, stdlib, gun, lager, gproc, mnesia]},
     {env, []},
     {modules, []},
     {maintainers, []},

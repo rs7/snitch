@@ -20,6 +20,8 @@ stop() -> application:stop(?MODULE).
 %%% behaviour
 %%%===================================================================
 
-start(_StartType, []) -> likes_supervisor:start_link().
+start(_StartType, []) ->
+  task_manager:start(),
+  likes_supervisor:start_link().
 
 stop(_State) -> ok.
