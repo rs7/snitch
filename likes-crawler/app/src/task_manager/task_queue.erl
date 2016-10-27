@@ -1,4 +1,4 @@
--module(task_manager).
+-module(task_queue).
 
 %%% api
 -export([start/0, reserve/2, release/2, create_database/0]).

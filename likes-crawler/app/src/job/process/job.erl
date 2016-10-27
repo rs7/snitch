@@ -8,8 +8,7 @@
 %%% behaviour
 -export([init/1]).
 
--define(NAME(JobRef), {?MODULE, JobRef}).
--define(SERVER_NAME(JobRef), {via, identifiable, ?NAME(JobRef)}).
+-define(SERVER_NAME(JobRef), {via, identifiable, {?MODULE, JobRef}}).
 
 %%%===================================================================
 %%% api
@@ -20,7 +19,7 @@ start_link(Ref, Priority, Body, ControllerRef, ListRef) ->
 
 stop(Ref, ListRef) -> job_list:terminate_job(ListRef, Ref).
 
-whereis(Ref) -> identifiable:whereis_name(?NAME(Ref)).
+whereis(Ref) -> util:whereis_name(?SERVER_NAME(Ref)).
 
 %%%===================================================================
 %%% behaviour

@@ -8,8 +8,7 @@
 %%% behaviour
 -export([init/1]).
 
--define(NAME(RequesterRef), {?MODULE, RequesterRef}).
--define(SERVER_NAME(RequesterRef), {via, identifiable, ?NAME(RequesterRef)}).
+-define(SERVER_NAME(RequesterRef), {via, identifiable, {?MODULE, RequesterRef}}).
 
 %%%===================================================================
 %%% api
@@ -17,7 +16,7 @@
 
 start_link(RequesterRef) -> supervisor:start_link(?SERVER_NAME(RequesterRef), ?MODULE, RequesterRef).
 
-whereis(RequesterRef) -> identifiable:whereis_name(?NAME(RequesterRef)).
+whereis(RequesterRef) -> util:whereis_name(?SERVER_NAME(RequesterRef)).
 
 %%%===================================================================
 %%% behaviour
