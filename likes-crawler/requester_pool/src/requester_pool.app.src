@@ -1,0 +1,12 @@
+{
+  application, requester_pool,
+  [
+    {description, "Snitch Likes Requester Pool application"},
+    {vsn, "0.0.1"},
+    {registered, []},
+    {mod, {requester_pool, []}},
+    {applications, [kernel, stdlib, lager, gproc, gun]},
+    {env, []},
+    {modules, []}
+  ]
+}.

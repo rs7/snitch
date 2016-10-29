@@ -16,7 +16,7 @@ start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 start_child(RequesterRef) -> supervisor:start_child(?MODULE, [RequesterRef]).
 
-terminate_child(RequesterRef) -> supervisor:terminate_child(?MODULE, requester:whereis(RequesterRef)).
+terminate_child(RequesterRef) -> supervisor:terminate_child(?MODULE, requester_pool:whereis(RequesterRef)).
 
 %%%===================================================================
 %%% behaviour

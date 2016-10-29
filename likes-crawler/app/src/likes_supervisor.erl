@@ -21,12 +21,10 @@ start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 init([]) ->
   Strategy = #{strategy => one_for_all, intensity => 5, period => 1},
 
-  {ok, RequesterCount} = application:get_env(requester_count),
-
   Specifications = [
     #{
-      id => requester_pool,
-      start => {requester_pool, start_link, [RequesterCount]},
+      id => ID,
+      start => {MODULE, start_link, []},
       type => worker
     }
   ],

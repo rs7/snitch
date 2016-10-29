@@ -87,11 +87,3 @@ handle_info(_Info, State) -> {noreply, State}.
 terminate(_Reason, _State) -> ok.
 
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
-
-%%%===================================================================
-%%% internal
-%%%===================================================================
-
-request_data({Type, Args}) -> Type:request(Args).
-
-process_response({Type, Args}, Result) -> Type:response(Result, Args).

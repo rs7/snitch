@@ -1,9 +1,9 @@
--module(requester_pool).
+-module(requester_pool_supervisor).
 
 -behaviour(supervisor).
 
 %%% api
--export([start_link/1, get_size/0, set_size/1]).
+-export([start_link/1]).
 
 %%% behaviour
 -export([init/1]).
@@ -13,10 +13,6 @@
 %%%===================================================================
 
 start_link(Size) -> supervisor:start_link({local, ?MODULE}, ?MODULE, Size).
-
-get_size() -> requester_pool_controller:get_requester_count().
-
-set_size(Size) -> requester_pool_controller:set_requester_count(Size).
 
 %%%===================================================================
 %%% behaviour
@@ -35,7 +31,7 @@ init(Size) ->
       id => controller,
       start => {requester_pool_controller, start_link, [Size]},
       type => worker
-    }
+    },
   ],
 
   {ok, {Strategy, Specifications}}.
