@@ -39,14 +39,14 @@ init([]) ->
 
   Specifications = [
     #{
-      id => requester_pool,
-      start => {requester_pool_sup, start_link, [Size]},
-      type => supervisor
-    },
-    #{
       id => request_queue,
       start => {request_queue, start_link, []},
       type => worker
+    },
+    #{
+      id => requester_pool,
+      start => {requester_pool_supervisor, start_link, [Size]},
+      type => supervisor
     }
   ],
 

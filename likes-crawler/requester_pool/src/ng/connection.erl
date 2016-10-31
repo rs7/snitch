@@ -1,4 +1,4 @@
--module(requester_connection).
+-module(connection).
 
 -behaviour(gen_server).
 

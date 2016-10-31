@@ -1,4 +1,4 @@
--module(request_queue).
+-module(queue).
 
 -behaviour(gen_server).
 
@@ -15,6 +15,10 @@
 %%%===================================================================
 
 start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+
+reserve(Count) -> gen_server:call(?MODULE, {reserve, Count}).
+
+retrieve(RequestRef) -> gen_server:call(?MODULE, {retrieve, RequestRef}).
 
 %%%===================================================================
 %%% behaviour
