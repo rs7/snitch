@@ -5,7 +5,7 @@
     {vsn, "0.0.1"},
     {registered, []},
     {mod, {requester_pool, []}},
-    {applications, [kernel, stdlib, lager, gproc, gun]},
+    {applications, [kernel, stdlib, lager, gproc, gun, amqp_client]},
     {env, []},
     {modules, []}
   ]

@@ -31,7 +31,7 @@ init(Size) ->
       id => controller,
       start => {requester_pool_controller, start_link, [Size]},
       type => worker
-    },
+    }
   ],
 
   {ok, {Strategy, Specifications}}.

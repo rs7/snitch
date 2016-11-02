@@ -43,7 +43,7 @@ handle_call(
   {ok, JobList} = task_queue:reserve(request, Count),
 
   RequestRefList = [make_ref() || _ <- JobList],
-  RequestDataList = [request_data(JobData) || {_JobRef, JobData} <- JobList],
+  RequestDataList = [JobData || {_JobRef, JobData} <- JobList],
 
   RequestInfoList = lists:zip(RequestRefList, RequestDataList),
 
@@ -63,7 +63,7 @@ handle_call(_Request, _From, State) -> {reply, ok, State}.
 handle_cast({result, RequestRef, Result}, #state{jobs = Jobs} = State) ->
   {{JobRef, JobData}, NewJobs} = maps:take(RequestRef, Jobs),
 
-  task_queue:release(JobRef, {ok, process_response(JobData, Result)}),
+  %task_queue:release(JobRef, {ok, process_response(JobData, Result)}),
 
   NewState = State#state{jobs = NewJobs},
   {noreply, NewState};
@@ -73,7 +73,7 @@ handle_cast({retry, RequestRef, Reason}, #state{jobs = Jobs} = State) ->
 
   {{JobRef, _JobData}, NewJobs} = maps:take(RequestRef, Jobs),
 
-  task_queue:release(JobRef, retrieve),
+  %task_queue:release(JobRef, retrieve),
 
   NewState = State#state{jobs = NewJobs},
   {noreply, NewState};

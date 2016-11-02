@@ -1,43 +1,34 @@
 -module(queue).
 
--behaviour(gen_server).
-
 %%% api
--export([start_link/0]).
+-export([init/0]).
 
-%%% behaviour
--export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
-
--record(state, {}).
+-include_lib("amqp_client/include/amqp_client.hrl").
 
 %%%===================================================================
 %%% api
 %%%===================================================================
 
-start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+init() ->
+  {ok, Connection} = amqp_connection:start(#amqp_params_network{}),
+  {ok, Channel} = amqp_connection:open_channel(Connection),
 
-reserve(Count) -> gen_server:call(?MODULE, {reserve, Count}).
+  Exchange = <<"requester_exchange">>,
+  #'exchange.declare_ok'{} = amqp_channel:call(Channel, #'exchange.declare'{exchange = Exchange}),
 
-retrieve(RequestRef) -> gen_server:call(?MODULE, {retrieve, RequestRef}).
+  Queue = <<"requester_queue">>,
+  #'queue.declare_ok'{} = amqp_channel:call(Channel, #'queue.declare'{queue = Queue}),
 
-%%%===================================================================
-%%% behaviour
-%%%===================================================================
+  RoutingKey = <<"requester_key">>,
+  Binding = #'queue.bind'{queue = Queue, exchange = Exchange, routing_key = RoutingKey},
+  #'queue.bind_ok'{} = amqp_channel:call(Channel, Binding),
 
-init([]) -> {ok, #state{}}.
+  Payload = <<"request">>,
+  Publish = #'basic.publish'{exchange = Exchange, routing_key = RoutingKey},
+  amqp_channel:cast(Channel, Publish, #amqp_msg{payload = Payload}),
 
-handle_call(_Request, _From, State) -> {reply, ok, State}.
+  ok.
 
-handle_cast(_Request, State) -> {noreply, State}.
+get(Count) -> ok.
 
-handle_info(_Info, State) -> {noreply, State}.
-
-terminate(_Reason, _State) -> ok.
-
-code_change(_OldVsn, State, _Extra) -> {ok, State}.
-
-%%%===================================================================
-%%% internal
-%%%===================================================================
-
-create_request_ref() -> make_ref().
+retrieve() -> ok.
