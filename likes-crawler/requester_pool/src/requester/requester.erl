@@ -35,6 +35,11 @@ init(RequesterRef) ->
       id => connection,
       start => {requester_connection, start_link, [RequesterRef]},
       type => worker
+    },
+    #{
+      id => queue,
+      start => {request_queue, start_link, []},
+      type => worker
     }
   ],
 
