@@ -76,10 +76,10 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%%===================================================================
 
 send_error(Reason, #state{stream_ref = StreamRef, requester_ref = RequesterRef}) ->
-  requester_controller:retry(RequesterRef, StreamRef, Reason).
+  lager:info("error ~p", [Reason]).
 
 send_result(Result, #state{stream_ref = StreamRef, requester_ref = RequesterRef}) ->
-  requester_controller:result(RequesterRef, StreamRef, Result).
+  lager:info("result ~p", [Result]).
 
 send_decode_result(#state{data = Data} = State) ->
   case response_lib:decode_body(Data) of

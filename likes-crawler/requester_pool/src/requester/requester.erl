@@ -27,18 +27,13 @@ init(RequesterRef) ->
 
   Specifications = [
     #{
-      id => controller,
-      start => {requester_controller, start_link, [RequesterRef]},
+      id => queue,
+      start => {requester_queue, start_link, [RequesterRef]},
       type => worker
     },
     #{
       id => connection,
       start => {requester_connection, start_link, [RequesterRef]},
-      type => worker
-    },
-    #{
-      id => queue,
-      start => {request_queue, start_link, []},
       type => worker
     }
   ],
