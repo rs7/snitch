@@ -8,13 +8,13 @@
 %%% behaviour
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
--define(SERVER_NAME(RequesterRef), {via, identifiable, {?MODULE, RequesterRef}}).
+-define(SERVER_NAME(RequesterId), {via, identifiable, {?MODULE, RequesterId}}).
 
 -define(SHORT_BLOCK_TIMEOUT, 1000).
 -define(COUNT_BY_CONNECTION, 100).
 
 -record(state, {
-  requester_ref,
+  requester_id,
   gun_connection_pid,
   streams,
   count
@@ -24,16 +24,16 @@
 %%% api
 %%%===================================================================
 
-start_link(RequesterRef) -> gen_server:start_link(?SERVER_NAME(RequesterRef), ?MODULE, RequesterRef, []).
+start_link(RequesterId) -> gen_server:start_link(?SERVER_NAME(RequesterId), ?MODULE, RequesterId, []).
 
 %%%===================================================================
 %%% behaviour
 %%%===================================================================
 
-init(RequesterRef) ->
+init(RequesterId) ->
   {ok, GunConnectionPid} = connection_lib:open(),
-  %link(GunConnectionPid),
-  NewState = #state{requester_ref = RequesterRef, gun_connection_pid = GunConnectionPid},
+  link(GunConnectionPid),
+  NewState = #state{requester_id = RequesterId, gun_connection_pid = GunConnectionPid},
   {ok, NewState}.
 
 handle_call(_Request, _From, State) -> {reply, ok, State}.
@@ -125,11 +125,11 @@ handle_info(
 handle_info(
   send_block,
   #state{
-    requester_ref = RequesterRef, gun_connection_pid = GunConnectionPid, streams = Streams, count = Count
+    requester_id = RequesterId, gun_connection_pid = GunConnectionPid, streams = Streams, count = Count
   } = State
 ) ->
 
-  NewRequests = run_requests(RequesterRef, GunConnectionPid, Count),
+  NewRequests = run_requests(RequesterId, GunConnectionPid, Count),
   NewStreams = sets:union(Streams, sets:from_list(NewRequests)),
   SuccessCount = length(NewRequests),
   NewCount = Count - SuccessCount,
@@ -157,16 +157,16 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%% internal
 %%%===================================================================
 
-run_requests(RequesterRef, GunConnectionPid, Count) ->
-  {ok, RequestDataItems} = requester_queue:reserve(RequesterRef, Count),
+run_requests(RequesterId, GunConnectionPid, Count) ->
+  {ok, RequestInfoItems} = requester_queue:reserve(RequesterId, Count),
   [
     begin
       StreamRef = connection_lib:request(GunConnectionPid, RequestData),
-      stream:start_link(StreamRef, RequesterRef),
+      stream:start_link(StreamRef, RequesterId, RequestId),
       StreamRef
     end
     ||
-    RequestData <- RequestDataItems
+    {RequestId, RequestData} <- RequestInfoItems
   ].
 
 %%%===================================================================

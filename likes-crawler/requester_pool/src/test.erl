@@ -61,6 +61,5 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 put_message(Channel) ->
   Message = {'utils.getServerTime', #{}},
   Payload = erlang:term_to_binary(Message),
-  Publish = #'basic.publish'{exchange = "", routing_key = ?QUEUE},
-  ok.
-  %amqp_channel:cast(Channel, Publish, #amqp_msg{payload = Payload}).
+  Publish = #'basic.publish'{exchange = <<"">>, routing_key = ?QUEUE},
+  amqp_channel:cast(Channel, Publish, #amqp_msg{payload = Payload}).

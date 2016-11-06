@@ -3,14 +3,14 @@
 -behaviour(gen_server).
 
 %%% api
--export([start_link/1, reserve/2]).
+-export([start_link/1, reserve/2, complete/2, retrieve/2]).
 
 %%% behaviour
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 -include_lib("amqp_client/include/amqp_client.hrl").
 
--define(SERVER_NAME(RequesterRef), {via, identifiable, {?MODULE, RequesterRef}}).
+-define(SERVER_NAME(RequesterId), {via, identifiable, {?MODULE, RequesterId}}).
 
 -define(QUEUE, <<"requester_queue">>).
 
@@ -20,9 +20,13 @@
 %%% api
 %%%===================================================================
 
-start_link(RequesterRef) -> gen_server:start_link(?SERVER_NAME(RequesterRef), ?MODULE, [], []).
+start_link(RequesterId) -> gen_server:start_link(?SERVER_NAME(RequesterId), ?MODULE, [], []).
 
-reserve(RequesterRef, Count) -> gen_server:call(?SERVER_NAME(RequesterRef), {reserve, Count}).
+reserve(RequesterId, Count) -> gen_server:call(?SERVER_NAME(RequesterId), {reserve, Count}).
+
+complete(RequesterId, RequestId) -> gen_server:cast(?SERVER_NAME(RequesterId), {complete, RequestId}).
+
+retrieve(RequesterId, RequestId) -> gen_server:cast(?SERVER_NAME(RequesterId), {retrieve, RequestId}).
 
 %%%===================================================================
 %%% behaviour
@@ -38,18 +42,20 @@ init([]) ->
   {ok, NewState}.
 
 handle_call({reserve, Count}, _From, #state{channel = Channel} = State) ->
-  Messages = get_requests(Count, Channel),
+  Messages = get_messages(Count, Channel),
   {reply, {ok, Messages}, State};
 
 handle_call(_Request, _From, State) -> {reply, ok, State}.
 
-%%handle_cast({retry, DeliveryTag}, #state{channel = Channel} = State) ->
-%%  amqp_channel:call(Channel, #'basic.nack'{delivery_tag = DeliveryTag}),
-%%  {noreply, State};
-%%
-%%handle_cast({confirm, DeliveryTag}, #state{channel = Channel} = State) ->
-%%  amqp_channel:call(Channel, #'basic.ack'{delivery_tag = DeliveryTag}),
-%%  {noreply, State};
+handle_cast({complete, RequestId}, #state{channel = Channel} = State) ->
+  amqp_channel:cast(Channel, #'basic.ack'{delivery_tag = RequestId}),
+  lager:info("complete ~p", [RequestId]),
+  {noreply, State};
+
+handle_cast({retrieve, RequestId}, #state{channel = Channel} = State) ->
+  amqp_channel:cast(Channel, #'basic.nack'{delivery_tag = RequestId}),
+  lager:info("retrieve ~p", [RequestId]),
+  {noreply, State};
 
 handle_cast(_Request, State) -> {noreply, State}.
 
@@ -66,17 +72,15 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%% internal
 %%%===================================================================
 
-get_requests(Count, Channel) -> get_requests(Count, Channel, []).
+get_messages(Count, Channel) -> get_messages(Count, Channel, []).
 
-get_requests(0, _Channel, Acc) -> lists:reverse(Acc);
+get_messages(0, _Channel, Acc) -> lists:reverse(Acc);
 
-get_requests(Count, Channel, Acc) ->
+get_messages(Count, Channel, Acc) ->
   case amqp_channel:call(Channel, #'basic.get'{queue = ?QUEUE}) of
     {#'basic.get_ok'{delivery_tag = DeliveryTag}, #amqp_msg{payload = Payload}} ->
-      RequestData = erlang:binary_to_term(Payload),
-      RequestRef = DeliveryTag,
-      RequestInfo = {RequestRef, RequestData},
-      get_requests(Count - 1, Channel, [RequestData | Acc]);
+      Message = {DeliveryTag, erlang:binary_to_term(Payload)},
+      get_messages(Count - 1, Channel, [Message | Acc]);
 
-    #'basic.get_empty'{} -> get_requests(0, Channel, Acc)
+    #'basic.get_empty'{} -> get_messages(0, Channel, Acc)
   end.

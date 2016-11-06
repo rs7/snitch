@@ -4,7 +4,7 @@
 -behaviour(supervisor).
 
 %%% api
--export([get_size/0, set_size/1]).
+-export([start_child/1, terminate_child/1]).
 
 %%% behaviour application
 -export([start/2, stop/1]).
@@ -16,15 +16,21 @@
 %%% api
 %%%===================================================================
 
-get_size() -> requester_pool_controller:get_requester_count().
+start_child(RequesterId) -> supervisor:start_child(?MODULE, [RequesterId]).
 
-set_size(Size) -> requester_pool_controller:set_requester_count(Size).
+terminate_child(RequesterId) -> supervisor:terminate_child(?MODULE, requester:whereis(RequesterId)).
 
 %%%===================================================================
 %%% behaviour application
 %%%===================================================================
 
-start(_StartType, _StartArgs) -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+start(_StartType, _StartArgs) ->
+  Result = supervisor:start_link({local, ?MODULE}, ?MODULE, []),
+
+  {ok, Size} = application:get_env(size),
+  start_children(Size),
+
+  Result.
 
 stop(_State) -> ok.
 
@@ -33,21 +39,24 @@ stop(_State) -> ok.
 %%%===================================================================
 
 init([]) ->
-  Strategy = #{strategy => one_for_all, intensity => 5, period => 1},
-
-  {ok, Size} = application:get_env(size),
+  Strategy = #{strategy => simple_one_for_one, intensity => 5, period => 1},
 
   Specifications = [
     #{
-      id => requester_pool,
-      start => {requester_pool_supervisor, start_link, [Size]},
-      type => supervisor
-    },
-    #{
-      id => test,
-      start => {test, start_link, []},
+      id => requester,
+      start => {requester, start_link, []},
       type => worker
     }
   ],
 
   {ok, {Strategy, Specifications}}.
+
+%%%===================================================================
+%%% internal
+%%%===================================================================
+
+start_children(0) -> ok;
+
+start_children(Count) ->
+  start_child(Count),
+  start_children(Count - 1).

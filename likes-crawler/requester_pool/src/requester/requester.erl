@@ -8,32 +8,32 @@
 %%% behaviour
 -export([init/1]).
 
--define(SERVER_NAME(RequesterRef), {via, identifiable, {?MODULE, RequesterRef}}).
+-define(SERVER_NAME(RequesterId), {via, identifiable, {?MODULE, RequesterId}}).
 
 %%%===================================================================
 %%% api
 %%%===================================================================
 
-start_link(RequesterRef) -> supervisor:start_link(?SERVER_NAME(RequesterRef), ?MODULE, RequesterRef).
+start_link(RequesterId) -> supervisor:start_link(?SERVER_NAME(RequesterId), ?MODULE, RequesterId).
 
-whereis(RequesterRef) -> util:whereis_name(?SERVER_NAME(RequesterRef)).
+whereis(RequesterId) -> util:whereis_name(?SERVER_NAME(RequesterId)).
 
 %%%===================================================================
 %%% behaviour
 %%%===================================================================
 
-init(RequesterRef) ->
+init(RequesterId) ->
   Strategy = #{strategy => one_for_all, intensity => 1, period => 5},
 
   Specifications = [
     #{
       id => queue,
-      start => {requester_queue, start_link, [RequesterRef]},
+      start => {requester_queue, start_link, [RequesterId]},
       type => worker
     },
     #{
       id => connection,
-      start => {requester_connection, start_link, [RequesterRef]},
+      start => {requester_connection, start_link, [RequesterId]},
       type => worker
     }
   ],
