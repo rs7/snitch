@@ -1,10 +1,10 @@
 {
-  application, requester_pool,
+  application, request_executor,
   [
-    {description, "Snitch Likes Requester Pool application"},
+    {description, "Snitch Likes Request Executer application"},
     {vsn, "0.0.1"},
     {registered, []},
-    {mod, {requester_pool, []}},
+    {mod, {request_executor, []}},
     {applications, [kernel, stdlib, lager, gproc, gun, amqp_client]},
     {env, []},
     {modules, []}

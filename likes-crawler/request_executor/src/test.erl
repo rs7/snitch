@@ -10,7 +10,7 @@
 
 -include_lib("amqp_client/include/amqp_client.hrl").
 
--define(PUT_TIMEOUT, 100).
+-define(PUT_TIMEOUT, 10).
 -define(QUEUE, <<"requester_queue">>).
 
 -record(state, {connection, channel}).
@@ -59,7 +59,11 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%%===================================================================
 
 put_message(Channel) ->
+  CorrelationId = integer_to_binary(erlang:unique_integer()),
   Message = {'utils.getServerTime', #{}},
   Payload = erlang:term_to_binary(Message),
   Publish = #'basic.publish'{exchange = <<"">>, routing_key = ?QUEUE},
-  amqp_channel:cast(Channel, Publish, #amqp_msg{payload = Payload}).
+  amqp_channel:cast(
+    Channel, Publish,
+    #amqp_msg{payload = Payload, props = #'P_basic'{delivery_mode = 2, correlation_id = CorrelationId}}
+  ).

@@ -3,7 +3,7 @@
 -behaviour(supervisor).
 
 %%% api
--export([start_link/1, whereis/1]).
+-export([start_link/1]).
 
 %%% behaviour
 -export([init/1]).
@@ -15,8 +15,6 @@
 %%%===================================================================
 
 start_link(RequesterId) -> supervisor:start_link(?SERVER_NAME(RequesterId), ?MODULE, RequesterId).
-
-whereis(RequesterId) -> util:whereis_name(?SERVER_NAME(RequesterId)).
 
 %%%===================================================================
 %%% behaviour

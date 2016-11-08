@@ -1,41 +1,24 @@
 -module(requester_pool).
 
--behaviour(application).
 -behaviour(supervisor).
 
 %%% api
--export([start_child/1, terminate_child/1]).
+-export([start_link/1]).
 
-%%% behaviour application
--export([start/2, stop/1]).
-
-%%% behaviour supervisor
+%%% behaviour
 -export([init/1]).
 
 %%%===================================================================
 %%% api
 %%%===================================================================
 
-start_child(RequesterId) -> supervisor:start_child(?MODULE, [RequesterId]).
-
-terminate_child(RequesterId) -> supervisor:terminate_child(?MODULE, requester:whereis(RequesterId)).
-
-%%%===================================================================
-%%% behaviour application
-%%%===================================================================
-
-start(_StartType, _StartArgs) ->
+start_link(Size) ->
   Result = supervisor:start_link({local, ?MODULE}, ?MODULE, []),
-
-  {ok, Size} = application:get_env(size),
   start_children(Size),
-
   Result.
 
-stop(_State) -> ok.
-
 %%%===================================================================
-%%% behaviour supervisor
+%%% behaviour
 %%%===================================================================
 
 init([]) ->
@@ -60,3 +43,5 @@ start_children(0) -> ok;
 start_children(Count) ->
   start_child(Count),
   start_children(Count - 1).
+
+start_child(RequesterId) -> supervisor:start_child(?MODULE, [RequesterId]).

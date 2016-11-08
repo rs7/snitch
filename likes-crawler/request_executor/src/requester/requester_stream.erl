@@ -1,4 +1,4 @@
--module(stream).
+-module(requester_stream).
 
 -behaviour(gen_server).
 
@@ -75,10 +75,10 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%%===================================================================
 
 fail(Reason, #state{requester_id = RequesterId, request_id = RequestId}) ->
-  requester_queue:retrieve(RequesterId, RequestId).
+  requester_queue:retry(RequesterId, RequestId).
 
 success(Result, #state{requester_id = RequesterId, request_id = RequestId}) ->
-  requester_queue:complete(RequesterId, RequestId).
+  requester_queue:ok(RequesterId, RequestId, Result).
 
 send_decode_result(#state{data = Data} = State) ->
   case response_lib:decode_body(Data) of

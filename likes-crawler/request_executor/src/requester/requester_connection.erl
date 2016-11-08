@@ -72,7 +72,7 @@ handle_info(
   #state{gun_connection_pid = GunConnectionPid, streams = Streams} = State
 ) ->
   NewStreams = sets:del_element(StreamRef, Streams),
-  stream:error(StreamRef, {gun_stream_error, Reason}),
+  requester_stream:error(StreamRef, {gun_stream_error, Reason}),
   NewState = State#state{streams = NewStreams},
   {noreply, NewState};
 
@@ -84,7 +84,7 @@ handle_info(
   {gun_response, GunConnectionPid, StreamRef, nofin, Status, _Headers},
   #state{gun_connection_pid = GunConnectionPid} = State
 ) ->
-  stream:status(StreamRef, Status),
+  requester_stream:status(StreamRef, Status),
   {noreply, State};
 
 handle_info(
@@ -92,8 +92,8 @@ handle_info(
   #state{gun_connection_pid = GunConnectionPid, streams = Streams} = State
 ) ->
   NewStreams = sets:del_element(StreamRef, Streams),
-  stream:status(StreamRef, Status),
-  stream:fin(StreamRef),
+  requester_stream:status(StreamRef, Status),
+  requester_stream:fin(StreamRef),
   NewState = State#state{streams = NewStreams},
   {noreply, NewState};
 
@@ -105,7 +105,7 @@ handle_info(
   {gun_data, GunConnectionPid, StreamRef, nofin, Data},
   #state{gun_connection_pid = GunConnectionPid} = State
 ) ->
-  stream:data(StreamRef, Data),
+  requester_stream:data(StreamRef, Data),
   {noreply, State};
 
 handle_info(
@@ -113,8 +113,8 @@ handle_info(
   #state{gun_connection_pid = GunConnectionPid, streams = Streams} = State
 ) ->
   NewStreams = sets:del_element(StreamRef, Streams),
-  stream:data(StreamRef, Data),
-  stream:fin(StreamRef),
+  requester_stream:data(StreamRef, Data),
+  requester_stream:fin(StreamRef),
   NewState = State#state{streams = NewStreams},
   {noreply, NewState};
 
@@ -158,11 +158,11 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%%===================================================================
 
 run_requests(RequesterId, GunConnectionPid, Count) ->
-  {ok, RequestInfoItems} = requester_queue:reserve(RequesterId, Count),
+  {ok, RequestInfoItems} = requester_queue:get(RequesterId, Count),
   [
     begin
       StreamRef = connection_lib:request(GunConnectionPid, RequestData),
-      stream:start_link(StreamRef, RequesterId, RequestId),
+      requester_stream:start_link(StreamRef, RequesterId, RequestId),
       StreamRef
     end
     ||
@@ -174,5 +174,5 @@ run_requests(RequesterId, GunConnectionPid, Count) ->
 %%%===================================================================
 
 streams_error(RequestsInProgress, Reason) -> [
-  stream:error(RequestRef, Reason) || RequestRef <- maps:values(RequestsInProgress)
+  requester_stream:error(RequestRef, Reason) || RequestRef <- maps:values(RequestsInProgress)
 ].
