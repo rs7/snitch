@@ -48,7 +48,7 @@ handle_info(
   {gun_down, GunConnectionPid, http, Reason, _KilledStreams, _UnprocessedStreams},
   #state{gun_connection_pid = GunConnectionPid, streams = Streams} = State
 ) ->
-  %streams_error(Streams, {gun_down, Reason}),
+  streams_error(Streams, {gun_down, Reason}),
   NewState = State#state{streams = undefined},
   {noreply, NewState};
 
@@ -146,9 +146,8 @@ handle_info(
 
 handle_info(_Info, State) -> {noreply, State}.
 
-terminate(Reason, #state{gun_connection_pid = GunConnectionPid, streams = Streams}) ->
+terminate(Reason, #state{gun_connection_pid = GunConnectionPid}) ->
   gun:close(GunConnectionPid),
-  %streams_error(Streams, {terminate, Reason}),
   ok.
 
 code_change(_OldVsn, State, _Extra) -> {ok, State}.

@@ -79,7 +79,10 @@ get_requests(_Channel, 0, Acc) -> lists:reverse(Acc);
 
 get_requests(Channel, Count, Acc) ->
   case amqp_channel:call(Channel, #'basic.get'{queue = ?REQUEST_QUEUE}) of
-    {#'basic.get_ok'{delivery_tag = DeliveryTag}, #amqp_msg{payload = Payload}} ->
+    {
+      #'basic.get_ok'{delivery_tag = DeliveryTag},
+      #amqp_msg{payload = Payload, props = #'P_basic'{correlation_id = CorrelationId}}
+    } ->
       Message = {DeliveryTag, erlang:binary_to_term(Payload)},
       get_requests(Channel, Count - 1, [Message | Acc]);
 

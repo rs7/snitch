@@ -33,6 +33,11 @@ init(RequesterId) ->
       id => connection,
       start => {requester_connection, start_link, [RequesterId]},
       type => worker
+    },
+    #{
+      id => stream_controller,
+      start => {requester_stream_controller, start_link, [RequesterId]},
+      type => worker
     }
   ],
 
