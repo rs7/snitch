@@ -1,38 +1,32 @@
-var http = require('http');
-var url = require('url');
-var querystring = require('querystring');
-var zlib = require('zlib');
+const net = require('net');
 
-var count = 0;
+const request = "GET /method/utils.getServerTime HTTP/1.1\nHost: api.vk.com\n\n";
 
-function accept(req, res) {
+const data = request.repeat(100);
 
-    count++;
+var count = process.argv[2] || 1;
 
-    var response = JSON.stringify({response: Date.now() / 1000 | 0})
+function tick() {
+    var client = new net.Socket();
+    client.connect(80, 'api.vk.com', function () {
+        console.log('Connected');
 
-    console.log(`${count} ${response}`);
-
-    //zlib.gzipSync(response);
-
-    res.writeHead(200, {
-        'Cache-Control': 'no-store',
-        'Connection': 'keep-alive',
-        //'Content-Encoding': 'gzip',
-        'Content-Length': Buffer.byteLength(response),
-        'Content-Type': 'application/json; charset=utf-8',
-        'Date': 'Fri, 11 Nov 2016 13:59:31 GMT',
-        'Pragma': 'no-cache',
-        'Server': 'Apache',
-        'X-Powered-By': 'PHP/3.7216'
+        client.write(data, function () {
+            console.log('Writed');
+        });
     });
 
-    res.end(response);
+    client.on('data', function (data) {
+        console.log('Received: ' + data.length);
+    });
 
-    if (count == 100) {
-        req.socket.destroy();
-        count = 0;
-    }
+    client.on('close', function () {
+        console.log('Connection closed', count);
+
+        if (--count) {
+            setTimeout(tick, 0);
+        }
+    });
 }
 
-const server = http.createServer(accept).listen(80);
+tick();

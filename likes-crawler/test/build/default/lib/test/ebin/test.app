@@ -2,4 +2,4 @@
              [{registered,[]},
               {vsn,"0.0.1"},
               {applications,[kernel,stdlib]},
-              {modules,[test,test_multi]}]}.
+              {modules,[multi,test,test_multi]}]}.

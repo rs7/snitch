@@ -1,72 +1,91 @@
 -module(test).
 
--export([start/1]).
+-export([loop/0, tick/0]).
 
--include_lib("test.hrl").
+-define(REQUEST, <<"GET /method/utils.getServerTime HTTP/1.1\nHost: api.vk.com\n\n">>).
+
+-define(SNDBUF, 16384).
+-define(RECBUF, 65536).
+-define(BUFFER, ?SNDBUF + ?RECBUF).
 
 -define(OPTIONS, [
   inet,
   binary,
   {active, false},
-  {nodelay, true}
+  {sndbuf, ?SNDBUF},
+  {recbuf, ?RECBUF},
+  {buffer, ?BUFFER}
 ]).
 
-start(N) ->
-  Time = series(N, 0),
-  Value = (N * 100) / (Time / 1000000),
-  ?OUT("~p req/sec~n", [Value]).
+loop() ->
 
-series(0, Time) -> Time;
+  {RawTime, Value} = timer:tc(fun tick/0),
 
-series(N, AccTime) ->
-  case timer:tc(fun tick/0) of
+  Time = RawTime / 1000000,
+  Speed = 100 / Time,
+  io:format("~.3f sec ~.3f req/sec~n", [Time, Speed]),
 
-    {Time, ok} -> series(N - 1, AccTime + Time);
+  loop().
 
-    {_Time, Result} ->
-      ?PRINT([Result]),
-      series(N, AccTime)
-
-  end.
-
-tick() -> connect().
+tick() ->
+  Result = connect(),
+  io:format("~n", []),
+  ok.
 
 connect() ->
-  ?LOG,
-  case gen_tcp:connect('api.vk.com', 80, ?OPTIONS) of
+  case gen_tcp:connect('api.vk.com', 80, ?OPTIONS, 1000) of
 
-    {ok, Socket} -> send(Socket);
+    {ok, Socket} ->
+      io:format("@", []),
+      send(Socket);
 
-    {error, Reason} -> {error, Reason}
+    {error, Reason} ->
+      io:format("/~p/", [Reason]),
+      {error, Reason}
 
   end.
 
 send(Socket) ->
-  ?LOG,
-  Data = [?REQUEST || _ <- lists:seq(1, 100)],
+  Send = data(),
 
-  case gen_tcp:send(Socket, Data) of
+  case gen_tcp:send(Socket, Send) of
 
-    ok -> recv(Socket);
+    ok ->
+      io:format("o", []),
+      recv(Socket, []);
 
     {error, Reason} ->
+      io:format("/~p/", [Reason]),
       close(Socket),
       {error, Reason}
 
   end.
 
-recv(Socket) ->
-  ?LOG,
-  case gen_tcp:recv(Socket, 0) of
+recv(Socket, Recv) ->
+  case gen_tcp:recv(Socket, 0, 1000) of
 
-    {error, closed} -> ok;
+    {ok, Packet} ->
+      io:format("-", []),
+      recv(Socket, [Packet | Recv]);
+
+    {error, closed} ->
+      io:format("x", []),
+      close(Socket),
+      {ok, Recv};
 
     {error, Reason} ->
+      io:format("/~p/", [Reason]),
       close(Socket),
-      {error, Reason};
-
-    {ok, Packet} -> recv(Socket)
+      {ok, Recv}
 
   end.
 
-close(Socket) -> gen_tcp:close(Socket).
+close(Socket) ->
+  gen_tcp:close(Socket),
+  io:format("#", []).
+
+data() -> data([], 100).
+
+data(Acc, 0) -> Acc;
+
+data(Acc, Count) -> data([?REQUEST | Acc], Count - 1).
