@@ -16,8 +16,9 @@ process({Type, Args}) -> process(Type:type(), Type, Args).
 process(request, Type, Args) ->
   Request = Type:request(Args),
   Response = vk:call(Request),
-  Children = Type:response(Response, Args),
-  children(Children);
+  Response;
+  %Children = Type:response(Response, Args),
+  %children(Children);
 
 process(query, Type, Args) ->
   Query = Type:query(Args),

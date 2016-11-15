@@ -50,7 +50,7 @@ handle_call({get, Count}, _From, #state{channel = Channel} = State) ->
 handle_call(_Request, _From, State) -> {reply, ok, State}.
 
 handle_cast({ok, RequestId, Result}, #state{channel = Channel} = State) ->
-  put_response(Channel,  , Result),
+  put_response(Channel, 1, Result),
   amqp_channel:cast(Channel, #'basic.ack'{delivery_tag = RequestId}),
   {noreply, State};
 

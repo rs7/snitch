@@ -1,8 +1,0 @@
-{
-  application, test,
-  [
-    {vsn, "0.0.1"},
-    {applications, [kernel, stdlib]},
-    {modules, [test_multi]}
-  ]
-}.

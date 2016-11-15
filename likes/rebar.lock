@@ -1,0 +1,12 @@
+[{<<"amqp_client">>,
+  {git,"https://github.com/jbrisbin/amqp_client.git",
+       {ref,"d50aec00b94f0766a048b4eceaf25ddfdeeb1d86"}},
+  0},
+ {<<"jsone">>,
+  {git,"https://github.com/sile/jsone.git",
+       {ref,"1ba7c1ab24b00d8eb7c33e4711a815e330be6c61"}},
+  0},
+ {<<"rabbit_common">>,
+  {git,"https://github.com/jbrisbin/rabbit_common.git",
+       {ref,"80814606ae23cc820c74e443383e192cd69ec030"}},
+  1}].
