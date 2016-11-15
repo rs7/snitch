@@ -1,0 +1,10 @@
+{
+  application, likes,
+  [
+    {description, "Snitch Likes application"},
+    {vsn, "0.0.1"},
+    {mod, {likes, []}},
+    {applications, [kernel, stdlib]},
+    {modules, []}
+  ]
+}.
