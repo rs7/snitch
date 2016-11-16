@@ -1,6 +1,6 @@
 -module(socket).
 
--export([start/1]).
+-export([process/1]).
 
 -define(SNDBUF, 16384).
 -define(RECBUF, 65536).
@@ -16,14 +16,14 @@
   {buffer, ?BUFFER}
 ]).
 
-start(Send) -> connect(Send).
+process(Send) -> connect(Send).
 
 connect(Send) ->
   case gen_tcp:connect('api.vk.com', 80, ?OPTIONS, 1000) of
 
     {ok, Socket} -> send(Socket, Send);
 
-    {error, Reason} -> {error, Reason}
+    {error, Reason} -> <<>>
 
   end.
 
@@ -34,7 +34,7 @@ send(Socket, Send) ->
 
     {error, Reason} ->
       close(Socket),
-      {error, Reason}
+      <<>>
 
   end.
 
@@ -47,7 +47,7 @@ recv(Socket, Recv) ->
 
     {error, _Reason} ->
       close(Socket),
-      {ok, Recv}
+      Recv
 
   end.
 

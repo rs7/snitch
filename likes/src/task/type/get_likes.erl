@@ -31,4 +31,4 @@ request({OwnerId, PhotoId, Offset, Count}) ->
 response({error, 15}, _Context) -> [];
 
 response({response, #{<<"items">> := Likers}}, {OwnerId, PhotoId, _Offset, _Count}) ->
-  [{save, {OwnerId, PhotoId, Likers}}].
+  [{save_likes, {OwnerId, PhotoId, Likers}}].

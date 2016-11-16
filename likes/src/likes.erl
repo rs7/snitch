@@ -26,6 +26,11 @@ init([]) ->
 
   Specifications = [
     #{
+      id => queue,
+      start => {requeue, start_link, []},
+      type => worker
+    },
+    #{
       id => requester,
       start => {requester, start_link, []},
       type => worker

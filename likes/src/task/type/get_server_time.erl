@@ -20,4 +20,6 @@ request([]) ->
     }
   }.
 
-response({response, Timestamp}, _Context) -> [].
+response({response, Timestamp}, _Context) ->
+  io:format("timestamp ~p~n", [Timestamp]),
+  [].

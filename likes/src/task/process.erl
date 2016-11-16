@@ -15,10 +15,9 @@ process({Type, Args}) -> process(Type:type(), Type, Args).
 
 process(request, Type, Args) ->
   Request = Type:request(Args),
-  Response = vk:call(Request),
-  Response;
-  %Children = Type:response(Response, Args),
-  %children(Children);
+  Response = call(Request),
+  Children = Type:response(Response, Args),
+  children(Children);
 
 process(query, Type, Args) ->
   Query = Type:query(Args),
@@ -26,16 +25,27 @@ process(query, Type, Args) ->
   Children = Type:result(Result, Args),
   children(Children).
 
+call(Request) ->
+  case vk:call(Request) of
+
+    {ok, Result} -> Result;
+
+    {error, Reason} ->
+      io:format("error ~p~n", [Reason]),
+      call(Request)
+
+  end.
+
 children(Children) -> parallel(?MODULE, process, Children).
 
-parallel(Module, Function, ArgumentsList) ->
-  Result = rpc:parallel_eval([
-    {Module, Function, Arguments} || Arguments <- ArgumentsList
-  ]),
-  case process_rpc_result(Result) of
-    {error, Reason} -> {error, Reason};
-    ok -> {ok, Result}
-  end.
+parallel(Module, Function, ArgumentList) ->
+  Calls = [
+    {Module, Function, [Argument]} || Argument <- ArgumentList
+  ],
+
+  Result = rpc:parallel_eval(Calls),
+
+  process_rpc_result(Result).
 
 process_rpc_result([ok | Remaining]) -> process_rpc_result(Remaining);
 process_rpc_result([{badrpc, Reason} | _]) -> {error, Reason};
