@@ -1,6 +1,7 @@
 -module(requeue).
 
--export([start_link/0, call/1, get/0, reply/2]).
+%%% api
+-export([start_link/0, call/1, get/0, reply/2, retry/2]).
 
 %%%===================================================================
 %%% api
@@ -10,8 +11,6 @@ start_link() ->
   Pid = spawn_link(fun loop/0),
   register(?MODULE, Pid),
   {ok, Pid}.
-
-reply(CallFrom, Called) -> CallFrom ! {called, Called}.
 
 call(Call) ->
   ?MODULE ! {call, self(), Call},
@@ -24,6 +23,10 @@ get() ->
   receive
     {got, Got} -> Got
   end.
+
+reply(CallFrom, Called) -> CallFrom ! {called, Called}.
+
+retry(Call, CallFrom) -> ?MODULE ! {call, CallFrom, Call}.
 
 %%%===================================================================
 %%% internal

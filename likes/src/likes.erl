@@ -24,6 +24,8 @@ stop(_State) -> ok.
 init([]) ->
   Strategy = #{strategy => one_for_all, intensity => 1, period => 5},
 
+  {ok, RequesterCount} = application:get_env(requester_count),
+
   Specifications = [
     #{
       id => queue,
@@ -31,8 +33,8 @@ init([]) ->
       type => worker
     },
     #{
-      id => requester,
-      start => {requester, start_link, []},
+      id => requester_pool,
+      start => {requester_pool, start_link, [RequesterCount]},
       type => worker
     }
   ],

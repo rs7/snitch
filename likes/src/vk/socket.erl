@@ -23,7 +23,7 @@ connect(Send) ->
 
     {ok, Socket} -> send(Socket, Send);
 
-    {error, Reason} -> <<>>
+    {error, _Reason} -> <<>>
 
   end.
 
@@ -32,7 +32,7 @@ send(Socket, Send) ->
 
     ok -> recv(Socket);
 
-    {error, Reason} ->
+    {error, _Reason} ->
       close(Socket),
       <<>>
 

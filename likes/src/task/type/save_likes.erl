@@ -16,6 +16,4 @@ query({Owner, Photo, Likers}) ->
   R = list_to_binary(io_lib:format("~w", [{Owner, Photo, Likers}])),
   <<"INSERT QUERY ", R/binary>>.
 
-result(Result, _Args) ->
-  io:format("~p~n", [Result]),
-  [].
+result(_Result, _Args) -> [].

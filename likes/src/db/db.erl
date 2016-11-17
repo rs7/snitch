@@ -7,4 +7,6 @@
 %%% api
 %%%===================================================================
 
-run(Query) -> {ok, Query}.
+run(Query) ->
+  io:format("sql: ~p~n", [Query]),
+  {ok, Query}.
