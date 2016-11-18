@@ -22,20 +22,22 @@ stop(_State) -> ok.
 %%%===================================================================
 
 init([]) ->
-  Strategy = #{strategy => one_for_all, intensity => 1, period => 5},
+  Strategy = #{strategy => one_for_all},
 
   {ok, RequesterCount} = application:get_env(requester_count),
 
   Specifications = [
     #{
       id => queue,
-      start => {requeue, start_link, []},
-      type => worker
+      start => {requeue, start_link, []}
     },
     #{
       id => requester_pool,
-      start => {requester_pool, start_link, [RequesterCount]},
-      type => worker
+      start => {requester_pool, start_link, [RequesterCount]}
+    },
+    #{
+      id => test,
+      start => {test, start_link, []}
     }
   ],
 

@@ -14,6 +14,6 @@ type() -> query.
 
 query({Owner, Photo, Likers}) ->
   R = list_to_binary(io_lib:format("~w", [{Owner, Photo, Likers}])),
-  <<"INSERT QUERY ", R/binary>>.
+  <<"INSERT INTO table VALUES ", R/binary>>.
 
 result(_Result, _Args) -> [].

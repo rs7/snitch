@@ -1,4 +1,4 @@
--module(requester_pool).
+-module(test_pool).
 
 -behaviour(supervisor).
 
@@ -7,6 +7,9 @@
 
 %%% behaviour
 -export([init/1]).
+
+%%% internal
+-export([start_item/0, item_loop/1]).
 
 %%%===================================================================
 %%% api
@@ -26,8 +29,8 @@ init([]) ->
 
   Specifications = [
     #{
-      id => requester,
-      start => {requester, start_link, []}
+      id => undefined,
+      start => {?MODULE, start_item, []}
     }
   ],
 
@@ -42,3 +45,16 @@ start_children(0) -> ok;
 start_children(Count) ->
   supervisor:start_child(?MODULE, []),
   start_children(Count - 1).
+
+start_item() ->
+  Count = 700,
+  Requests = [{'utils.getServerTime', #{}} || _ <- lists:seq(1, Count)],
+  {ok, spawn_link(?MODULE, item_loop, [Requests])}.
+
+item_loop(Requests) ->
+
+  rpc:parallel_eval(
+    [{vk, call, [Request]} || Request <- Requests]
+  ),
+
+  item_loop(Requests).

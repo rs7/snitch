@@ -13,7 +13,7 @@ start_link() ->
   {ok, Pid}.
 
 call(Call) ->
-  ?MODULE ! {call, self(), Call},
+  add(self(), Call),
   receive
     {called, Called} -> Called
   end.
@@ -26,7 +26,7 @@ get() ->
 
 reply(CallFrom, Called) -> CallFrom ! {called, Called}.
 
-retry(Call, CallFrom) -> ?MODULE ! {call, CallFrom, Call}.
+retry(CallFrom, Call) -> add(CallFrom, Call).
 
 %%%===================================================================
 %%% internal
@@ -36,6 +36,8 @@ loop() ->
   receive
     {get, From} -> get(From, 100)
   end.
+
+add(CallFrom, Call) -> ?MODULE ! {call, CallFrom, Call}.
 
 get(GetFrom, Count) -> get(GetFrom, Count, []).
 

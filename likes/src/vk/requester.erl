@@ -8,6 +8,7 @@
 %%%===================================================================
 
 start_link() ->
+  lager:debug("Requester start", []),
   Pid = spawn_link(fun loop/0),
   {ok, Pid}.
 
@@ -29,5 +30,11 @@ work(Queue) ->
   Send = request:create(Requests),
   Recv = socket:process(Send),
   Responses = response:parse(Recv, length(Requests)),
-  [requeue:reply(From, Response) || {From, Response} <- lists:zip(Froms, Responses)],
+  [process_result(From, Response, Request) || {From, Response, Request} <- lists:zip3(Froms, Responses, Requests)],
   loop().
+
+process_result(From, {ok, Response}, _Request) ->
+  metrics:notify(),
+  requeue:reply(From, Response);
+
+process_result(From, {error, _Reason}, Request) -> requeue:retry(From, Request).
