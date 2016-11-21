@@ -2,6 +2,8 @@
 
 -export([create/1]).
 
+create([]) -> <<>>;
+
 create(Requests) -> request(Requests, <<>>).
 
 request([Request], Send) ->

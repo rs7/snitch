@@ -36,8 +36,12 @@ init([]) ->
       start => {requester_pool, start_link, [RequesterCount]}
     },
     #{
+      id => metrics,
+      start => {metrics, start_link, []}
+    },
+    #{
       id => test,
-      start => {test, start_link, []}
+      start => {test2, start_link, []}
     }
   ],
 

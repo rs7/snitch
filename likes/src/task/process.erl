@@ -15,7 +15,7 @@ process({Type, Args}) -> process(Type:type(), Type, Args).
 
 process(request, Type, Args) ->
   Request = Type:request(Args),
-  Response = call(Request),
+  Response = vk:call(Request),
   Children = Type:response(Response, Args),
   children(Children);
 
@@ -24,17 +24,6 @@ process(query, Type, Args) ->
   Result = db:run(Query),
   Children = Type:result(Result, Args),
   children(Children).
-
-call(Request) ->
-  case vk:call(Request) of
-
-    {ok, Result} -> Result;
-
-    {error, Reason} ->
-      io:format("error ~p~n", [Reason]),
-      call(Request)
-
-  end.
 
 children(Children) -> parallel(?MODULE, process, Children).
 

@@ -7,6 +7,8 @@
 %%% api
 %%%===================================================================
 
-run(Query) ->
-  io:format("sql: ~p~n", [Query]),
-  {ok, Query}.
+run(<<"SELECT user">>) -> rand:uniform(400000000);
+
+run(<<"INSERT likes", R/binary>>) ->
+  %io:format("likes: ~p~n", [R]),
+  ok.

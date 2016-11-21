@@ -1,7 +1,7 @@
 -module(requeue).
 
 %%% api
--export([start_link/0, call/1, get/0, reply/2, retry/2]).
+-export([start_link/0, exec/1, get/0, reply/2, retry/2]).
 
 %%%===================================================================
 %%% api
@@ -12,7 +12,7 @@ start_link() ->
   register(?MODULE, Pid),
   {ok, Pid}.
 
-call(Call) ->
+exec(Call) ->
   add(self(), Call),
   receive
     {called, Called} -> Called
@@ -24,9 +24,13 @@ get() ->
     {got, Got} -> Got
   end.
 
-reply(CallFrom, Called) -> CallFrom ! {called, Called}.
+reply(CallFrom, Called) ->
+  metrics:inc(reply),
+  CallFrom ! {called, Called}.
 
-retry(CallFrom, Call) -> add(CallFrom, Call).
+retry(CallFrom, Call) ->
+  metrics:inc(retry),
+  add(CallFrom, Call).
 
 %%%===================================================================
 %%% internal

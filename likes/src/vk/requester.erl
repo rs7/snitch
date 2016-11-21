@@ -7,34 +7,29 @@
 %%% api
 %%%===================================================================
 
-start_link() ->
-  lager:debug("Requester start", []),
-  Pid = spawn_link(fun loop/0),
-  {ok, Pid}.
+start_link() -> spawn_link(fun loop/0).
 
 %%%===================================================================
 %%% internal
 %%%===================================================================
 
 loop() ->
-  case requeue:get() of
-    [] ->
-      timer:sleep(100),
-      loop();
-
-    Queue -> work(Queue)
-  end.
-
-work(Queue) ->
-  {Requests, Froms} = lists:unzip(Queue),
+  {Requests, Froms} = lists:unzip(queue()),
   Send = request:create(Requests),
   Recv = socket:process(Send),
   Responses = response:parse(Recv, length(Requests)),
-  [process_result(From, Response, Request) || {From, Response, Request} <- lists:zip3(Froms, Responses, Requests)],
+
+  lists:foreach(fun process/1, lists:zip3(Froms, Requests, Responses)),
+
   loop().
 
-process_result(From, {ok, Response}, _Request) ->
-  metrics:notify(),
-  requeue:reply(From, Response);
+queue() ->
+  case requeue:get() of
+    [] ->
+      timer:sleep(100),
+      queue();
+    Queue -> Queue
+  end.
 
-process_result(From, {error, _Reason}, Request) -> requeue:retry(From, Request).
+process({From, _Request, {ok, Response}}) -> requeue:reply(From, Response);
+process({From, Request, {error, _Reason}}) -> requeue:retry(From, Request).

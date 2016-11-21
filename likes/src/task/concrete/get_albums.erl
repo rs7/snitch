@@ -22,6 +22,9 @@ request(OwnerId) ->
     }
   }.
 
+%% пользователь удалил страницу
+response({error, 15}, _Context) -> [];
+
 response({response, #{<<"items">> := AlbumItems}}, _Context) ->
   lists:append(
     [

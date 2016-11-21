@@ -20,6 +20,8 @@
   {buffer, ?BUFFER}
 ]).
 
+process(<<>>) -> <<>>;
+
 process(Send) -> connect(Send).
 
 connect(Send) ->
@@ -27,9 +29,7 @@ connect(Send) ->
 
     {ok, Socket} -> send(Socket, Send);
 
-    {error, _Reason} ->
-      lager:info("Connect error ~p", [_Reason]),
-      <<>>
+    {error, _Reason} -> <<>>
 
   end.
 
@@ -39,7 +39,6 @@ send(Socket, Send) ->
     ok -> recv(Socket);
 
     {error, _Reason} ->
-      lager:info("Send error ~p", [_Reason]),
       close(Socket),
       <<>>
 
@@ -52,12 +51,7 @@ recv(Socket, Recv) ->
 
     {ok, Packet} -> recv(Socket, <<Recv/binary, Packet/binary>>);
 
-    {error, closed} ->
-      close(Socket),
-      Recv;
-
     {error, _Reason} ->
-      lager:info("Receive error ~p", [_Reason]),
       close(Socket),
       Recv
 

@@ -1,4 +1,4 @@
--module(save_likes).
+-module(get_user).
 
 -behaviour(gen_task).
 -behaviour(gen_query_task).
@@ -12,8 +12,6 @@
 
 type() -> query.
 
-query({Owner, Photo, Likers}) ->
-  R = list_to_binary(io_lib:format("~w", [{Owner, Photo, Likers}])),
-  <<"INSERT INTO table VALUES ", R/binary>>.
+query([]) -> <<"SELECT user">>.
 
-result(_Result, _Args) -> [].
+result(User, _Args) -> [{get_albums, User}].
