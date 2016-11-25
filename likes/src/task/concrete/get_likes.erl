@@ -12,17 +12,18 @@
 
 type() -> request.
 
-request({OwnerId, PhotoId, Offset, Count}) ->
-  Params = maps:merge(
+request({Owner, Photo, Offset, Count}) ->
+  Params =
     #{
       type => photo,
-      owner_id => OwnerId,
-      item_id => PhotoId,
+      owner_id => Owner,
+      item_id => Photo,
       v => '5.53'
     },
-    list:optimize_map(Offset, Count, 100)
-  ),
-  {'likes.getList', Params}.
+
+  FinalParams = list:add_page_params(Params, Offset, Count, 100),
+
+  {'likes.getList', FinalParams}.
 
 %% пользователь удалил страницу
 %% пользователь удалил альбом
@@ -30,5 +31,5 @@ request({OwnerId, PhotoId, Offset, Count}) ->
 %% пользователь скрыл альбом
 response({error, 15}, _Context) -> [];
 
-response({response, #{<<"items">> := Likers}}, {OwnerId, PhotoId, _Offset, _Count}) ->
-  [{save_likes, {OwnerId, PhotoId, Likers}}].
+response({response, #{<<"items">> := Likers}}, {Owner, Photo, _Offset, _Count}) ->
+  [{save_likes, {Owner, Photo, Likers}}].

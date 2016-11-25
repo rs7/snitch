@@ -33,7 +33,7 @@ loop(ConnectionCount) ->
   FinishTime = ?TIME,
   Values = values(),
   Duration = FinishTime - StartTime,
-  process(Values, Duration, ConnectionCount),
+%%  process(Values, Duration, ConnectionCount),
   loop(ConnectionCount).
 
 values() ->

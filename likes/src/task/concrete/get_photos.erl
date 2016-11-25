@@ -12,17 +12,18 @@
 
 type() -> request.
 
-request({AlbumOwnerId, AlbumId, PhotosOffset, PhotosCount}) ->
-  Params = maps:merge(
+request({Owner, Album, Offset, Count}) ->
+  Params =
     #{
-      owner_id => AlbumOwnerId,
-      album_id => AlbumId,
+      owner_id => Owner,
+      album_id => Album,
       extended => 1,
       v => '5.53'
     },
-    list:optimize_map(PhotosOffset, PhotosCount, 1000)
-  ),
-  {'photos.get', Params}.
+
+  FinalParams = list:add_page_params(Params, Offset, Count, 1000),
+
+  {'photos.get', FinalParams}.
 
 %% пользователь скрыл альбом
 response({error, 7}, _Context) -> [];
@@ -37,12 +38,12 @@ response({response, #{<<"items">> := Items}}, _Context) ->
   lists:append(
     [
       [
-        {get_likes, {PhotoOwnerId, PhotoId, PageLikesOffset, PageLikesCount}}
+        {get_likes, {Owner, Photo, Offset, Count}}
         ||
-        {PageLikesOffset, PageLikesCount} <- list:params(LikesCount, 1000)
+        {Offset, Count} <- list:partition(LikesCount, 1000)
       ]
       ||
-      #{<<"id">> := PhotoId, <<"owner_id">> := PhotoOwnerId, <<"likes">> := #{<<"count">> := LikesCount}} <- Items,
+      #{<<"id">> := Photo, <<"owner_id">> := Owner, <<"likes">> := #{<<"count">> := LikesCount}} <- Items,
       LikesCount > 0
     ]
   ).

@@ -13,12 +13,12 @@
 type() -> request.
 
 request([]) ->
-  {
-    'utils.getServerTime',
+  Params =
     #{
       v => '5.53'
-    }
-  }.
+    },
+
+  {'utils.getServerTime', Params}.
 
 response({response, Timestamp}, _Context) ->
   io:format("timestamp ~p~n", [Timestamp]),

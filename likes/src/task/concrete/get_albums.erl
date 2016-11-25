@@ -12,29 +12,29 @@
 
 type() -> request.
 
-request(OwnerId) ->
-  {
-    'photos.getAlbums',
+request(Owner) ->
+  Params =
     #{
-      owner_id => OwnerId,
+      owner_id => Owner,
       need_system => 1,
       v => '5.53'
-    }
-  }.
+    },
+
+  {'photos.getAlbums', Params}.
 
 %% пользователь удалил страницу
 response({error, 15}, _Context) -> [];
 
-response({response, #{<<"items">> := AlbumItems}}, _Context) ->
+response({response, #{<<"items">> := Items}}, _Context) ->
   lists:append(
     [
       [
-        {get_photos, {AlbumOwnerId, AlbumId, PhotosPageOffset, PhotosPageCount}}
+        {get_photos, {Owner, Album, Offset, Count}}
         ||
-        {PhotosPageOffset, PhotosPageCount} <- list:params(PhotosCount, 1000)
+        {Offset, Count} <- list:partition(Size, 1000)
       ]
       ||
-      #{<<"id">> := AlbumId, <<"owner_id">> := AlbumOwnerId, <<"size">> := PhotosCount} <- AlbumItems,
-      PhotosCount > 0
+      #{<<"id">> := Album, <<"owner_id">> := Owner, <<"size">> := Size} <- Items,
+      Size > 0
     ]
   ).

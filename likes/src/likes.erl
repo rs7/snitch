@@ -34,15 +34,15 @@ init([]) ->
     #{
       id => requester_pool,
       start => {requester_pool, start_link, [RequesterCount]}
-    },
-    #{
+    }
+    ,#{
       id => metrics,
       start => {metrics, start_link, []}
-    },
-    #{
-      id => test,
-      start => {test2, start_link, []}
     }
+%%    ,#{
+%%      id => test,
+%%      start => {test2, start_link, []}
+%%    }
   ],
 
   {ok, {Strategy, Specifications}}.
