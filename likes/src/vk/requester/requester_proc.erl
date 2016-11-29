@@ -1,4 +1,4 @@
--module(requester).
+-module(requester_proc).
 
 %%% api
 -export([start_link/0]).
@@ -14,22 +14,20 @@ start_link() -> spawn_link(fun loop/0).
 %%%===================================================================
 
 loop() ->
-  {Requests, Froms} = lists:unzip(queue()),
+  {Ids, Requests} = lists:unzip(get_requests()),
   Send = request:create(Requests),
   Recv = socket:process(Send),
   Responses = response:parse(Recv, length(Requests)),
 
-  lists:foreach(fun process/1, lists:zip3(Froms, Requests, Responses)),
+  %%lists:foreach(fun process/1, lists:zip3(Froms, Requests, Responses)),
 
   loop().
 
-queue() ->
-  case requeue:get() of
+get_requests() ->
+  {ok, Result} = requester_queue:get(),
+  case Result of
     [] ->
       timer:sleep(100),
-      queue();
-    Queue -> Queue
+      get_requests();
+    Requests -> Requests
   end.
-
-process({From, _Request, {ok, Response}}) -> requeue:reply(From, Response);
-process({From, Request, {error, _Reason}}) -> requeue:retry(From, Request).

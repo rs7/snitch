@@ -1,4 +1,4 @@
--module(requester_pool).
+-module(requesters_pool).
 
 -behaviour(supervisor).
 
