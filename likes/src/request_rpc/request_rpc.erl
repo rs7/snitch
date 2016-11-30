@@ -1,9 +1,9 @@
--module(requester_queue).
+-module(request_rpc).
 
 -behaviour(gen_server).
 
 %%% api
--export([start_link/0, get/0, reply/2, reject/2]).
+-export([start_link/0, call/1]).
 
 %%% behaviour
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -12,9 +12,10 @@
 
 -define(REQUEST_QUEUE, <<"request">>).
 -define(RESPONSE_QUEUE, <<"response">>).
--define(PREFETCH_COUNT, 100).
 
--record(state, {cache, channel, connection, consumer_tag}).
+-record(state, {channel, connection, consumer_tag, from_dict}).
+
+-define(PREFETCH_COUNT, 100).
 
 %%%===================================================================
 %%% api
@@ -22,11 +23,7 @@
 
 start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
-get() -> gen_server:call(?MODULE, get).
-
-reply(Id, Reply) -> gen_server:cast(?MODULE, {reply, Id, Reply}).
-
-reject(Id, Reason) -> gen_server:cast(?MODULE, {reject, Id, Reason}).
+call(Request) -> gen_server:call(?MODULE, {call, Request}).
 
 %%%===================================================================
 %%% behaviour
@@ -41,41 +38,31 @@ init([]) ->
 
   #'basic.qos_ok'{} = amqp_channel:call(Channel, #'basic.qos'{prefetch_count = ?PREFETCH_COUNT}),
   #'basic.consume_ok'{consumer_tag = ConsumerTag} =
-    amqp_channel:call(Channel, #'basic.consume'{queue = ?REQUEST_QUEUE}),
+    amqp_channel:call(Channel, #'basic.consume'{queue = ?RESPONSE_QUEUE}),
 
-  State = #state{cache = [], channel = Channel, connection = Connection, consumer_tag = ConsumerTag},
+  FromDict = dict:new(),
+
+  State = #state{channel = Channel, connection = Connection, consumer_tag = ConsumerTag, from_dict = FromDict},
   {ok, State}.
 
-handle_call(get, _From, #state{cache = Cache} = State) ->
-  NewCache = [],
-  NewState = State#state{cache = NewCache},
-  {reply, {ok, Cache}, NewState};
+handle_call({call, Request}, From, #state{channel = Channel, from_dict = FromDict} = State) ->
 
-handle_call(_Request, _From, State) -> {reply, ok, State}.
-
-handle_cast({reply, {DeliveryTag, CorrelationId}, Reply}, #state{channel = Channel} = State) ->
-
-  lager:info("reply: ~p ~p ~p", [DeliveryTag, CorrelationId, Reply]),
-
-  #'tx.select_ok'{} = amqp_channel:call(Channel, #'tx.select'{}),
+  CorrelationId = integer_to_binary(erlang:unique_integer()),
 
   amqp_channel:cast(
     Channel,
-    #'basic.publish'{exchange = <<"">>, routing_key = ?RESPONSE_QUEUE},
+    #'basic.publish'{exchange = <<"">>, routing_key = ?REQUEST_QUEUE},
     #amqp_msg{
-      payload = erlang:term_to_binary(Reply), props = #'P_basic'{correlation_id = CorrelationId, delivery_mode = 2}
+      payload = erlang:term_to_binary(Request), props = #'P_basic'{correlation_id = CorrelationId, delivery_mode = 2}
     }
   ),
 
-  amqp_channel:cast(Channel, #'basic.ack'{delivery_tag = DeliveryTag}),
+  NewFromDict = dict:store(CorrelationId, From, FromDict),
 
-  #'tx.commit_ok'{} = amqp_channel:call(Channel, #'tx.commit'{}),
+  NewState = State#state{from_dict = NewFromDict},
+  {noreply, NewState};
 
-  {noreply, State};
-
-handle_cast({reject, {DeliveryTag, _CorrelationId}, _Reason}, #state{channel = Channel} = State) ->
-  amqp_channel:cast(Channel, #'basic.reject'{delivery_tag = DeliveryTag}),
-  {noreply, State};
+handle_call(_Request, _From, State) -> {reply, ok, State}.
 
 handle_cast(_Request, State) -> {noreply, State}.
 
@@ -84,19 +71,26 @@ handle_info(
     #'basic.deliver'{delivery_tag = DeliveryTag},
     #amqp_msg{payload = Payload, props = #'P_basic'{correlation_id = CorrelationId}}
   },
-  #state{cache = Cache} = State
+  #state{channel = Channel, from_dict = FromDict} = State
 ) ->
-  lager:info("queue deliver: ~p", [Payload]),
+  lager:info("rpc deliver: ~p", [Payload]),
 
-  Request = {{DeliveryTag, CorrelationId}, erlang:binary_to_term(Payload)},
+  Response = erlang:binary_to_term(Payload),
 
-  NewCache = [Request | Cache],
-  NewState = State#state{cache = NewCache},
+  From = dict:fetch(CorrelationId, FromDict),
+
+  gen_server:reply(From, Response),
+
+  amqp_channel:cast(Channel, #'basic.ack'{delivery_tag = DeliveryTag}),
+
+  NewFromDict = dict:erase(CorrelationId, FromDict),
+
+  NewState = State#state{from_dict = NewFromDict},
 
   {noreply, NewState};
 
 handle_info(_Info, State) ->
-  lager:info("queue info: ~p", [_Info]),
+  lager:info("rpc info: ~p", [_Info]),
   {noreply, State}.
 
 terminate(_Reason, #state{channel = Channel, connection = Connection, consumer_tag = ConsumerTag}) ->

@@ -7,7 +7,7 @@
 %%% api
 %%%===================================================================
 
-start_link() -> spawn_link(fun loop/0).
+start_link() -> {ok, spawn_link(fun loop/0)}.
 
 %%%===================================================================
 %%% internal
@@ -19,7 +19,7 @@ loop() ->
   Recv = socket:process(Send),
   Responses = response:parse(Recv, length(Requests)),
 
-  %%lists:foreach(fun process/1, lists:zip3(Froms, Requests, Responses)),
+  lists:foreach(fun process/1, lists:zip(Ids, Responses)),
 
   loop().
 
@@ -31,3 +31,6 @@ get_requests() ->
       get_requests();
     Requests -> Requests
   end.
+
+process({Id, {ok, Result}}) -> requester_queue:reply(Id, Result);
+process({Id, {error, Reason}}) -> requester_queue:reject(Id, Reason).

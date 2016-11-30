@@ -54,7 +54,7 @@ start_item() ->
 item_loop(Requests) ->
 
   rpc:parallel_eval(
-    [{vk, call, [Request]} || Request <- Requests]
+    [{request_rpc, call, [Request]} || Request <- Requests]
   ),
 
   item_loop(Requests).
