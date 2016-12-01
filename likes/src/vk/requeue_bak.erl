@@ -25,11 +25,11 @@ get() ->
   end.
 
 reply(CallFrom, Called) ->
-  metrics:inc(reply),
+  metrics_bak:inc(reply),
   CallFrom ! {called, Called}.
 
 retry(CallFrom, Call) ->
-  metrics:inc(retry),
+  metrics_bak:inc(retry),
   add(CallFrom, Call).
 
 %%%===================================================================

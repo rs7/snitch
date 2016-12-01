@@ -12,7 +12,7 @@
 %%% api
 %%%===================================================================
 
-start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+start_link() -> supervisor:start_link(?MODULE, []).
 
 %%%===================================================================
 %%% behaviour
@@ -21,14 +21,16 @@ start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 init([]) ->
   Strategy = #{strategy => one_for_all},
 
+  Id = make_ref(),
+
   Specifications = [
     #{
       id => queue,
-      start => {requester_queue, start_link, []}
+      start => {requester_queue, start_link, [Id]}
     },
     #{
       id => proc,
-      start => {requester_proc, start_link, []}
+      start => {requester_proc, start_link, [Id]}
     }
   ],
 

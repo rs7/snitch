@@ -4,7 +4,7 @@
     {description, "Snitch Likes application"},
     {vsn, "0.0.1"},
     {mod, {likes, []}},
-    {applications, [kernel, stdlib, lager]},
+    {applications, [kernel, stdlib, lager, ssl, gproc]},
     {modules, []}
   ]
 }.

@@ -23,7 +23,7 @@
 
 start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
-call(Request) -> gen_server:call(?MODULE, {call, Request}).
+call(Request) -> gen_server:call(?MODULE, {call, Request}, infinity).
 
 %%%===================================================================
 %%% behaviour
@@ -33,8 +33,8 @@ init([]) ->
   {ok, Connection} = amqp_connection:start(#amqp_params_network{}),
   {ok, Channel} = amqp_connection:open_channel(Connection),
 
-  #'queue.declare_ok'{} = amqp_channel:call(Channel, #'queue.declare'{queue = ?REQUEST_QUEUE, durable = true}),
-  #'queue.declare_ok'{} = amqp_channel:call(Channel, #'queue.declare'{queue = ?RESPONSE_QUEUE, durable = true}),
+  #'queue.declare_ok'{} = amqp_channel:call(Channel, #'queue.declare'{queue = ?REQUEST_QUEUE, auto_delete = true}),
+  #'queue.declare_ok'{} = amqp_channel:call(Channel, #'queue.declare'{queue = ?RESPONSE_QUEUE, auto_delete = true}),
 
   #'basic.qos_ok'{} = amqp_channel:call(Channel, #'basic.qos'{prefetch_count = ?PREFETCH_COUNT}),
   #'basic.consume_ok'{consumer_tag = ConsumerTag} =
@@ -47,14 +47,13 @@ init([]) ->
 
 handle_call({call, Request}, From, #state{channel = Channel, from_dict = FromDict} = State) ->
 
-  CorrelationId = integer_to_binary(erlang:unique_integer()),
+  CorrelationId = integer_to_binary(erlang:unique_integer([positive])),
+  Payload = erlang:term_to_binary(Request),
 
-  amqp_channel:cast(
+  ok = amqp_channel:call(
     Channel,
     #'basic.publish'{exchange = <<"">>, routing_key = ?REQUEST_QUEUE},
-    #amqp_msg{
-      payload = erlang:term_to_binary(Request), props = #'P_basic'{correlation_id = CorrelationId, delivery_mode = 2}
-    }
+    #amqp_msg{payload = Payload, props = #'P_basic'{correlation_id = CorrelationId}}
   ),
 
   NewFromDict = dict:store(CorrelationId, From, FromDict),
@@ -73,15 +72,13 @@ handle_info(
   },
   #state{channel = Channel, from_dict = FromDict} = State
 ) ->
-  lager:info("rpc deliver: ~p", [Payload]),
-
   Response = erlang:binary_to_term(Payload),
 
   From = dict:fetch(CorrelationId, FromDict),
 
   gen_server:reply(From, Response),
 
-  amqp_channel:cast(Channel, #'basic.ack'{delivery_tag = DeliveryTag}),
+  ok = amqp_channel:call(Channel, #'basic.ack'{delivery_tag = DeliveryTag}),
 
   NewFromDict = dict:erase(CorrelationId, FromDict),
 

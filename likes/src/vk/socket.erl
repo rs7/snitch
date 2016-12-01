@@ -25,7 +25,7 @@ process(<<>>) -> <<>>;
 process(Send) -> connect(Send).
 
 connect(Send) ->
-  case gen_tcp:connect('api.vk.com', 80, ?OPTIONS, ?CONNECT_TIMEOUT) of
+  case ssl:connect('api.vk.com', 443, ?OPTIONS, ?CONNECT_TIMEOUT) of
 
     {ok, Socket} -> send(Socket, Send);
 
@@ -34,7 +34,7 @@ connect(Send) ->
   end.
 
 send(Socket, Send) ->
-  case gen_tcp:send(Socket, Send) of
+  case ssl:send(Socket, Send) of
 
     ok -> recv(Socket);
 
@@ -47,7 +47,7 @@ send(Socket, Send) ->
 recv(Socket) -> recv(Socket, <<>>).
 
 recv(Socket, Recv) ->
-  case gen_tcp:recv(Socket, 0, ?RECEIVE_TIMEOUT) of
+  case ssl:recv(Socket, 0, ?RECEIVE_TIMEOUT) of
 
     {ok, Packet} -> recv(Socket, <<Recv/binary, Packet/binary>>);
 
@@ -57,4 +57,4 @@ recv(Socket, Recv) ->
 
   end.
 
-close(Socket) -> gen_tcp:close(Socket).
+close(Socket) -> ssl:close(Socket).

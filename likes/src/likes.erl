@@ -32,8 +32,8 @@ init([]) ->
       start => {request_rpc, start_link, []}
     },
     #{
-      id => requester,
-      start => {requester, start_link, []}
+      id => requester_pool,
+      start => {requester_pool, start_link, []}
     },
     #{
       id => metrics,

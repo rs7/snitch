@@ -16,9 +16,9 @@
 %%%===================================================================
 
 start_link() ->
-  Result = supervisor:start_link({local, ?MODULE}, ?MODULE, []),
-  start_children(20),
-  Result.
+  {ok, Pid} = supervisor:start_link({local, ?MODULE}, ?MODULE, []),
+  start_children(10),
+  {ok, Pid}.
 
 %%%===================================================================
 %%% behaviour
@@ -43,18 +43,16 @@ init([]) ->
 start_children(0) -> ok;
 
 start_children(Count) ->
-  supervisor:start_child(?MODULE, []),
+  {ok, Pid} = supervisor:start_child(?MODULE, []),
   start_children(Count - 1).
 
 start_item() ->
-  Count = 700,
-  Requests = [{'utils.getServerTime', #{}} || _ <- lists:seq(1, Count)],
+  Count = 500,
+  Request = {'utils.getServerTime', #{}},
+  Requests = [Request || _ <- lists:seq(1, Count)],
   {ok, spawn_link(?MODULE, item_loop, [Requests])}.
 
 item_loop(Requests) ->
-
-  rpc:parallel_eval(
-    [{request_rpc, call, [Request]} || Request <- Requests]
-  ),
-
+  Calls = [{vk, call, [Request]} || Request <- Requests],
+  rpc:parallel_eval(Calls),
   item_loop(Requests).
