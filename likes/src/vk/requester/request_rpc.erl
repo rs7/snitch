@@ -9,13 +9,12 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 -include_lib("amqp_client/include/amqp_client.hrl").
-
--define(REQUEST_QUEUE, <<"request">>).
--define(RESPONSE_QUEUE, <<"response">>).
+-include("../../amqp/amqp.hrl").
 
 -record(state, {channel, connection, consumer_tag, from_dict}).
 
 -define(PREFETCH_COUNT, 100).
+-define(MAX_PRIORITY, 10).
 
 %%%===================================================================
 %%% api
@@ -33,7 +32,14 @@ init([]) ->
   {ok, Connection} = amqp_connection:start(#amqp_params_network{}),
   {ok, Channel} = amqp_connection:open_channel(Connection),
 
-  #'queue.declare_ok'{} = amqp_channel:call(Channel, #'queue.declare'{queue = ?REQUEST_QUEUE, auto_delete = true}),
+  #'queue.declare_ok'{} = amqp_channel:call(
+    Channel,
+    #'queue.declare'{
+      queue = ?REQUEST_QUEUE,
+      auto_delete = true,
+      arguments = [{<<"x-max-priority">>, short, ?MAX_PRIORITY}]
+    }
+  ),
   #'queue.declare_ok'{} = amqp_channel:call(Channel, #'queue.declare'{queue = ?RESPONSE_QUEUE, auto_delete = true}),
 
   #'basic.qos_ok'{} = amqp_channel:call(Channel, #'basic.qos'{prefetch_count = ?PREFETCH_COUNT}),
@@ -47,13 +53,15 @@ init([]) ->
 
 handle_call({call, Request}, From, #state{channel = Channel, from_dict = FromDict} = State) ->
 
-  CorrelationId = integer_to_binary(erlang:unique_integer([positive])),
-  Payload = erlang:term_to_binary(Request),
+  Priority = amqp:priority(priority(Request)),
+
+  CorrelationId = amqp:create_correlation_id(),
+  Payload = amqp:serialize(Request),
 
   ok = amqp_channel:call(
     Channel,
     #'basic.publish'{exchange = <<"">>, routing_key = ?REQUEST_QUEUE},
-    #amqp_msg{payload = Payload, props = #'P_basic'{correlation_id = CorrelationId}}
+    #amqp_msg{payload = Payload, props = #'P_basic'{correlation_id = CorrelationId, priority = Priority}}
   ),
 
   NewFromDict = dict:store(CorrelationId, From, FromDict),
@@ -72,7 +80,7 @@ handle_info(
   },
   #state{channel = Channel, from_dict = FromDict} = State
 ) ->
-  Response = erlang:binary_to_term(Payload),
+  Response = amqp:deserialize(Payload),
 
   From = dict:fetch(CorrelationId, FromDict),
 
@@ -86,6 +94,10 @@ handle_info(
 
   {noreply, NewState};
 
+handle_info(#'basic.consume_ok'{}, State) -> {noreply, State};
+
+handle_info(#'basic.cancel_ok'{}, State) -> {noreply, State};
+
 handle_info(_Info, State) ->
   lager:info("rpc info: ~p", [_Info]),
   {noreply, State}.
@@ -97,3 +109,12 @@ terminate(_Reason, #state{channel = Channel, connection = Connection, consumer_t
   ok.
 
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
+
+%%%===================================================================
+%%% internal
+%%%===================================================================
+
+priority({'likes.getList', _Params}) -> 3;
+priority({'photos.get', _Params}) -> 2;
+priority({'photos.getAlbums', _Params}) -> 1;
+priority({_Method, _Params}) -> 0.

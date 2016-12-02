@@ -17,7 +17,7 @@
 
 start_link() ->
   {ok, Pid} = supervisor:start_link({local, ?MODULE}, ?MODULE, []),
-  start_children(10),
+  start_children(100),
   {ok, Pid}.
 
 %%%===================================================================

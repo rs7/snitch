@@ -1,4 +1,4 @@
--module(request).
+-module(request_binary).
 
 -export([create/1]).
 

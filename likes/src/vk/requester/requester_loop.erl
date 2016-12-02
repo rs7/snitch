@@ -1,4 +1,4 @@
--module(requester_proc).
+-module(requester_loop).
 
 %%% api
 -export([start_link/1]).
@@ -18,9 +18,9 @@ start_link(Id) -> {ok, spawn_link(?MODULE, loop, [Id])}.
 
 loop(Id) ->
   {Ids, Requests} = lists:unzip(get_requests(Id)),
-  Send = request:create(Requests),
+  Send = request_binary:create(Requests),
   Recv = socket:process(Send),
-  Responses = response:parse(Recv, length(Requests)),
+  Responses = response_binary:parse(Recv, length(Requests)),
 
   lists:foreach(fun (Argument) -> process(Id, Argument) end, lists:zip3(Ids, Requests, Responses)),
 

@@ -1,4 +1,4 @@
--module(response).
+-module(response_binary).
 
 -export([parse/2]).
 

@@ -24,16 +24,14 @@ stop(_State) -> ok.
 init([]) ->
   Strategy = #{strategy => one_for_all},
 
-  %%{ok, RequesterCount} = application:get_env(requester_count),
-
   Specifications = [
     #{
       id => request_rpc,
       start => {request_rpc, start_link, []}
     },
     #{
-      id => requester_pool,
-      start => {requester_pool, start_link, []}
+      id => requesters_pool,
+      start => {requesters_pool, start_link, []}
     },
     #{
       id => metrics,

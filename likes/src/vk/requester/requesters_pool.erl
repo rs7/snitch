@@ -14,7 +14,10 @@
 
 start_link() ->
   {ok, Pid} = supervisor:start_link({local, ?MODULE}, ?MODULE, []),
-  start_children(10),
+
+  {ok, RequesterCount} = application:get_env(requester_count),
+  ok = start_children(RequesterCount),
+
   {ok, Pid}.
 
 %%%===================================================================
@@ -40,5 +43,5 @@ init([]) ->
 start_children(0) -> ok;
 
 start_children(Count) ->
-  {ok, Pid} = supervisor:start_child(?MODULE, []),
+  {ok, _Pid} = supervisor:start_child(?MODULE, []),
   start_children(Count - 1).

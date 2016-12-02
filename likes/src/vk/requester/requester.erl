@@ -29,8 +29,8 @@ init([]) ->
       start => {requester_queue, start_link, [Id]}
     },
     #{
-      id => proc,
-      start => {requester_proc, start_link, [Id]}
+      id => loop,
+      start => {requester_loop, start_link, [Id]}
     }
   ],
 
