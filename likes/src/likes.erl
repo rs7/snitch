@@ -26,6 +26,10 @@ init([]) ->
 
   Specifications = [
     #{
+      id => metrics,
+      start => {metrics, start_link, []}
+    },
+    #{
       id => request_rpc,
       start => {request_rpc, start_link, []}
     },
@@ -34,12 +38,8 @@ init([]) ->
       start => {requesters_pool, start_link, []}
     },
     #{
-      id => metrics,
-      start => {metrics, start_link, []}
-    },
-    #{
-      id => test,
-      start => {test, start_link, []}
+      id => user_pool,
+      start => {user_pool, start_link, []}
     }
   ],
 

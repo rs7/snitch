@@ -1,4 +1,4 @@
--module(save_likes).
+-module(save_friends).
 
 -behaviour(gen_task).
 -behaviour(gen_query_task).
@@ -12,6 +12,6 @@
 
 type() -> query.
 
-query({Owner, Photo, Likers}) -> <<"save likes">>.
+query({User, Friends}) -> <<"save friends">>.
 
 result(ok, _Args) -> [].

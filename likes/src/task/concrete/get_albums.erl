@@ -17,7 +17,7 @@ request(Owner) ->
     #{
       owner_id => Owner,
       need_system => 1,
-      v => '5.53'
+      v => '5.60'
     },
 
   {'photos.getAlbums', Params}.

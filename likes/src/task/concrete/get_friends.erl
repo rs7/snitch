@@ -1,4 +1,4 @@
--module(get_server_time).
+-module(get_friends).
 
 -behaviour(gen_task).
 -behaviour(gen_request_task).
@@ -12,14 +12,16 @@
 
 type() -> request.
 
-request([]) ->
+request(User) ->
   Params =
     #{
-      v => '5.53'
+      user_id => User,
+      v => '5.60'
     },
 
-  {'utils.getServerTime', Params}.
+  {'friends.get', Params}.
 
-response({response, Timestamp}, _Context) ->
-  io:format("timestamp ~p~n", [Timestamp]),
-  [].
+%% пользователь удалил страницу
+response({error, 15}, _Context) -> [];
+
+response({response, Friends}, User) -> {save_friends, {User, Friends}}.

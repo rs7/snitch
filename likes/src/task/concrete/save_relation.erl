@@ -1,4 +1,4 @@
--module(get_user).
+-module(save_relation).
 
 -behaviour(gen_task).
 -behaviour(gen_query_task).
@@ -12,6 +12,6 @@
 
 type() -> query.
 
-query([]) -> <<"SELECT user">>.
+query({User, Relation}) -> <<"save relation">>.
 
-result(User, _Args) -> [{get_albums, User}].
+result(ok, _Args) -> [].

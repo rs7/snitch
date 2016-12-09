@@ -18,7 +18,7 @@ request({Owner, Album, Offset, Count}) ->
       owner_id => Owner,
       album_id => Album,
       extended => 1,
-      v => '5.53'
+      v => '5.60'
     },
 
   FinalParams = list:add_page_params(Params, Offset, Count, 1000),

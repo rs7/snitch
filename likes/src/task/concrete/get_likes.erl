@@ -18,7 +18,7 @@ request({Owner, Photo, Offset, Count}) ->
       type => photo,
       owner_id => Owner,
       item_id => Photo,
-      v => '5.53'
+      v => '5.60'
     },
 
   FinalParams = list:add_page_params(Params, Offset, Count, 100),

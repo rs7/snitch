@@ -1,4 +1,4 @@
--module(requesters_pool).
+-module(user_pool).
 
 -behaviour(supervisor).
 
@@ -15,8 +15,7 @@
 start_link() ->
   {ok, Pid} = supervisor:start_link({local, ?MODULE}, ?MODULE, []),
 
-  {ok, RequesterCount} = application:get_env(requester_count),
-  ok = start_children(RequesterCount),
+  ok = start_children(3),
 
   {ok, Pid}.
 
@@ -30,7 +29,7 @@ init([]) ->
   Specifications = [
     #{
       id => undefined,
-      start => {requester, start_link, []},
+      start => {user_proc, start_link, []},
       type => supervisor
     }
   ],
