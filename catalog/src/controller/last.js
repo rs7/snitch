@@ -1,5 +1,7 @@
-var cheerio = require('cheerio');
-var request = require('request');
+const cheerio = require('cheerio');
+const request = require('request');
+
+module.exports = getLastID;
 
 function getLastID(cb) {
     execCatalog('catalog.php', cb);
@@ -12,7 +14,7 @@ function execCatalog(href, cb) {
             return;
         }
 
-        var href = lastHref(body);
+        const href = lastHref(body);
 
         execLink(href, fcatalog, fid);
 
@@ -27,8 +29,8 @@ function execCatalog(href, cb) {
 }
 
 function lastHref(page) {
-    var $ = cheerio.load(page);
-    var href = $('#content').find('a').last().attr('href');
+    const $ = cheerio.load(page);
+    const href = $('#content').find('a').last().attr('href');
     return href;
 }
 
@@ -38,14 +40,12 @@ function execLink(href, fcatalog, fid) {
         return;
     }
 
-    var match = /^id(\d+)$/.exec(href);
+    const match = /^id(\d+)$/.exec(href);
 
     if (!match) {
         throw new Error('Ссылка неизвестного типа: ' + href);
     }
 
-    var id = match[1];
+    const id = match[1];
     fid(id);
 }
-
-module.exports = getLastID;

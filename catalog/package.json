@@ -1,5 +1,5 @@
 {
-  "name": "snitch-catalog-crawler",
+  "name": "snitch-catalog",
   "version": "0.0.1",
   "scripts": {
     "start": "node src/server.js"
