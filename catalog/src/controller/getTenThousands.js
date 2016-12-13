@@ -17,10 +17,6 @@ module.exports = function (million_id, cb) {
 
         const $ = cheerio.load(body);
         const list = $('#content').children('div.page_block').children('div').find('a').map(function () {
-            console.log($(this).attr('href'));
-            console.log($(this).attr('href').slice(href_slice_length));
-            console.log(+$(this).attr('href').slice(href_slice_length));
-            console.log('\n');
             return 1 + +$(this).attr('href').slice(href_slice_length) + selection_1 * 100;
         }).get();
 

@@ -46,6 +46,6 @@ function execLink(href, fcatalog, fid) {
         throw new Error('Ссылка неизвестного типа: ' + href);
     }
 
-    const id = match[1];
+    const id = +match[1];
     fid(id);
 }
