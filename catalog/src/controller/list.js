@@ -34,6 +34,17 @@ function getList(type, id, callback) {
 
 }
 
+function getE6(callback) {
+    doRequest(null, function (error, result) {
+        if (error) {
+            callback(error);
+            return;
+        }
+
+
+    })
+}
+
 let [selection1E6, selection1E4, selection1E2] = selection;
 
     const selection1E6Part = selection1E6 ? `?selection=${selection1E6}` : '';
