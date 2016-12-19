@@ -6,6 +6,7 @@
   },
   "private": true,
   "dependencies": {
+    "amqplib": "^0.5.1",
     "cheerio": "^0.20.0"
   }
 }
