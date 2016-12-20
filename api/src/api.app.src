@@ -1,0 +1,10 @@
+{
+  application, api,
+  [
+    {description, "Snitch API application"},
+    {vsn, "0.0.1"},
+    {mod, {api, []}},
+    {applications, [kernel, stdlib, ssl, gproc]},
+    {modules, []}
+  ]
+}.
