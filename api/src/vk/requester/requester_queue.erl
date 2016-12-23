@@ -10,8 +10,7 @@
 
 -include_lib("amqp_client/include/amqp_client.hrl").
 
--define(PREFETCH_COUNT, 200).
--define(REQUEST_QUEUE, <<"snitch.likes.api">>).
+-define(QUEUE, <<"snitch.api.request">>).
 -define(SERVER_NAME(Id), {via, identifiable, {?MODULE, Id}}).
 
 -record(request, {correlation_id, data, delivery_tag, id, reply_to}).
@@ -37,9 +36,9 @@ init([]) ->
   {ok, Connection} = amqp_connection:start(#amqp_params_network{}),
   {ok, Channel} = amqp_connection:open_channel(Connection),
 
-  #'basic.qos_ok'{} = amqp_channel:call(Channel, #'basic.qos'{prefetch_count = ?PREFETCH_COUNT}),
-  #'basic.consume_ok'{consumer_tag = ConsumerTag} =
-    amqp_channel:call(Channel, #'basic.consume'{queue = ?REQUEST_QUEUE}),
+  #'queue.declare_ok'{} = amqp_channel:call(Channel, #'queue.declare'{queue = ?QUEUE}),
+  #'basic.qos_ok'{} = amqp_channel:call(Channel, #'basic.qos'{prefetch_count = 200}),
+  #'basic.consume_ok'{consumer_tag = ConsumerTag} = amqp_channel:call(Channel, #'basic.consume'{queue = ?QUEUE}),
 
   Cache = [],
   InProgress = #{},
@@ -52,7 +51,7 @@ init([]) ->
 handle_call(get, _From, #state{cache = Cache, in_progress = InProgress} = State) ->
   {Requests, NewCache} = split_cache(Cache, 100),
 
-  NewInProgress = maps:merge(InProgress, maps:from_list([{Requests#request.id, Request} || Request <- Requests])),
+  NewInProgress = maps:merge(InProgress, maps:from_list([{Request#request.id, Request} || Request <- Requests])),
 
   Result = [{RequestId, Data} || #request{data = Data, id = RequestId} <- Requests],
 
@@ -68,6 +67,10 @@ handle_cast({reply, RequestId, Response}, #state{channel = Channel, in_progress 
   #request{correlation_id = CorrelationId, delivery_tag = DeliveryTag, reply_to = ReplyTo} = Request,
 
   Payload = amqp:serialize(Response),
+
+  #'queue.declare_ok'{} = amqp_channel:call(
+    Channel, #'queue.declare'{queue = ReplyTo, arguments = [{<<"x-expires">>, signedint, 60000}]}
+  ),
 
   ok = amqp_channel:call(
     Channel,
