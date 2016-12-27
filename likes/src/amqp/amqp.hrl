@@ -1,3 +1,0 @@
--define(REQUEST_QUEUE, <<"snitch.likes.vk.request">>).
--define(RESPONSE_QUEUE, <<"snitch.likes.vk.response">>).
--define(USER_QUEUE, <<"snitch.likes.user">>).

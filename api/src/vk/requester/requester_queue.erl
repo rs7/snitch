@@ -66,11 +66,7 @@ handle_cast({reply, RequestId, Response}, #state{channel = Channel, in_progress 
 
   #request{correlation_id = CorrelationId, delivery_tag = DeliveryTag, reply_to = ReplyTo} = Request,
 
-  Payload = amqp:serialize(Response),
-
-  #'queue.declare_ok'{} = amqp_channel:call(
-    Channel, #'queue.declare'{queue = ReplyTo, arguments = [{<<"x-expires">>, signedint, 60000}]}
-  ),
+  Payload = amqp_serialize(Response),
 
   ok = amqp_channel:call(
     Channel,
@@ -103,7 +99,7 @@ handle_info(
     },
     #state{cache = Cache} = State
 ) ->
-  Data = amqp:deserialize(Payload),
+  Data = amqp_deserialize(Payload),
   Id = make_ref(),
 
   Request = #request{
@@ -114,10 +110,6 @@ handle_info(
   NewState = State#state{cache = NewCache},
 
   {noreply, NewState};
-
-handle_info(#'basic.consume_ok'{}, State) -> {noreply, State};
-
-handle_info(#'basic.cancel_ok'{}, State) -> {noreply, State};
 
 handle_info(_Info, State) -> {noreply, State}.
 
@@ -132,6 +124,10 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%%===================================================================
 %%% internal
 %%%===================================================================
+
+amqp_serialize(Term) -> term_to_binary(Term).
+
+amqp_deserialize(Binary) -> binary_to_term(Binary).
 
 split_cache(Cache, Count) when length(Cache) > Count -> lists:split(length(Cache) - Count, Cache);
 split_cache(Cache, _Count) -> {Cache, []}.
