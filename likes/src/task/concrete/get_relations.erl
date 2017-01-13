@@ -32,7 +32,7 @@ response({response, #{<<"items">> := Items}}, _Users) ->
         error -> -1
       end,
 
-      {save_relation, {User, Relation}}
+      {User, Relation}
     end
     ||
     Item <- Items

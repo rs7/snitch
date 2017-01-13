@@ -24,23 +24,6 @@ stop(_State) -> ok.
 init([]) ->
   Strategy = #{strategy => one_for_all},
 
-  Specifications = [
-    #{
-      id => metrics,
-      start => {metrics, start_link, []}
-    },
-    #{
-      id => request_rpc,
-      start => {request_rpc, start_link, []}
-    },
-    #{
-      id => requesters_pool,
-      start => {requesters_pool, start_link, []}
-    },
-    #{
-      id => user_pool,
-      start => {user_pool, start_link, []}
-    }
-  ],
+  Specifications = [],
 
   {ok, {Strategy, Specifications}}.

@@ -24,4 +24,4 @@ request(User) ->
 %% пользователь удалил страницу
 response({error, 15}, _Context) -> [];
 
-response({response, Friends}, User) -> {save_friends, {User, Friends}}.
+response({response, Friends}, User) -> {User, Friends}.

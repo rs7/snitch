@@ -31,5 +31,4 @@ request({Owner, Photo, Offset, Count}) ->
 %% пользователь скрыл альбом
 response({error, 15}, _Context) -> [];
 
-response({response, #{<<"items">> := Likers}}, {Owner, Photo, _Offset, _Count}) ->
-  [{save_likes, {Owner, Photo, Likers}}].
+response({response, #{<<"items">> := Likers}}, {Owner, Photo, _Offset, _Count}) -> [{Owner, Photo, Likers}].

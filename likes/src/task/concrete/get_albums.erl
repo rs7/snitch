@@ -29,7 +29,7 @@ response({response, #{<<"items">> := Items}}, _Context) ->
   lists:append(
     [
       [
-        {get_photos, {Owner, Album, Offset, Count}}
+        {Owner, Album, Offset, Count}
         ||
         {Offset, Count} <- list:partition(Size, 1000)
       ]
