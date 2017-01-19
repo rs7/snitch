@@ -1,24 +1,21 @@
--module(likes).
+-module(queue_controllers).
 
--behaviour(application).
 -behaviour(supervisor).
 
-%%% behaviour application
--export([start/2, stop/1]).
+%%% api
+-export([start_link/0]).
 
-%%% behaviour supervisor
+%%% behaviour
 -export([init/1]).
 
 %%%===================================================================
-%%% behaviour application
+%%% api
 %%%===================================================================
 
-start(_StartType, _StartArgs) -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
-
-stop(_State) -> ok.
+start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 %%%===================================================================
-%%% behaviour supervisor
+%%% behaviour
 %%%===================================================================
 
 init([]) ->
@@ -26,9 +23,12 @@ init([]) ->
 
   Specifications = [
     #{
-      id => queue_controllers,
-      start => {queue_controllers, start_link, []},
-      type => supervisor
+      id => user_1M_controller,
+      start => {gen_queue_controller, start_link, [user_1M_controller]}
+    },
+    #{
+      id => user_10K_controller,
+      start => {gen_queue_controller, start_link, [user_10K_controller]}
     }
   ],
 
