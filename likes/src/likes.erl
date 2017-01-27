@@ -26,8 +26,8 @@ init([]) ->
 
   Specifications = [
     #{
-      id => queue_controllers,
-      start => {queue_controllers, start_link, []},
+      id => catalog_queue_controllers,
+      start => {catalog_queue_controllers, start_link, []},
       type => supervisor
     }
   ],
